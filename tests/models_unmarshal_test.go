@@ -166,17 +166,83 @@ func TestThreadUnmarshal(t *testing.T) {
 		"votes": 0
 	}`
 
-	expected := &m.Thread {
-		Author: "j.sparrow",
+	expected := &m.Thread{
+		Author:  "j.sparrow",
 		Created: "2017-01-01T00:00:00.000Z",
-		Forum: "pirate-stories",
-		Id: 42,
+		Forum:   "pirate-stories",
+		Id:      42,
 		Message: "An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?",
-		Slug: "jones-cache",
-		Title: "Davy Jones cache",
-		Votes: 0,
+		Slug:    "jones-cache",
+		Title:   "Davy Jones cache",
+		Votes:   0,
 	}
 
 	result, err := m.UnmarshalThread([]byte(json))
+	ConcludeTestResult(expected, result, err, t)
+}
+
+func TestThreadUpdateUnmarshal(t *testing.T) {
+	json := `{
+		"message": "An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?",
+		"title": "Davy Jones cache"
+	  }`
+
+	expected := &m.ThreadUpdate{
+		Message: "An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?",
+		Title:   "Davy Jones cache",
+	}
+
+	result, err := m.UnmarshalThreadUpdate([]byte(json))
+	ConcludeTestResult(expected, result, err, t)
+}
+
+func TestUserUnmarshal(t *testing.T) {
+	json := `{
+		"about": "This is the day you will always remember as the day that you almost caught Captain Jack Sparrow!",
+		"email": "captaina@blackpearl.sea",
+		"fullname": "Captain Jack Sparrow",
+		"nickname": "j.sparrow"
+	  }`
+
+	expected := &m.User{
+		About:    "This is the day you will always remember as the day that you almost caught Captain Jack Sparrow!",
+		Email:    "captaina@blackpearl.sea",
+		FullName: "Captain Jack Sparrow",
+		NickName: "j.sparrow",
+	}
+
+	result, err := m.UnmarshalUser([]byte(json))
+	ConcludeTestResult(expected, result, err, t)
+}
+
+func TestUserUpdateUnmarshal(t *testing.T) {
+	json := `{
+		"about": "This is the day you will always remember as the day that you almost caught Captain Jack Sparrow!",
+		"email": "captaina@blackpearl.sea",
+		"fullname": "Captain Jack Sparrow"
+	  }`
+
+	expected := &m.UserUpdate{
+		About:    "This is the day you will always remember as the day that you almost caught Captain Jack Sparrow!",
+		Email:    "captaina@blackpearl.sea",
+		FullName: "Captain Jack Sparrow",
+	}
+
+	result, err := m.UnmarshalUserUpdate([]byte(json))
+	ConcludeTestResult(expected, result, err, t)
+}
+
+func TestVoteUnmarshal(t *testing.T) {
+	json := `{
+		"nickname": "Sekougi",
+		"voice": -1
+	}`
+
+	expected := &m.Vote{
+		NickName: "Sekougi",
+		Voice:    -1,
+	}
+
+	result, err := m.UnmarshalVote([]byte(json))
 	ConcludeTestResult(expected, result, err, t)
 }
