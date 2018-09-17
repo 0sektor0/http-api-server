@@ -4,39 +4,44 @@ import (
 	m "projects/http-api-server/models"
 )
 
+type ApiResponse struct {
+	Code     int
+	Response interface{}
+}
+
 //this interface designed for interaction with api
 type IApiService interface {
-	AddForum(forum *m.Forum) (*m.Forum, *m.Error)
+	AddForum(forum *m.Forum) *ApiResponse
 
-	AddPosts(slug string, posts []*m.Post) ([]*m.Post, *m.Error)
+	AddPosts(slug string, posts []*m.Post) *ApiResponse
 
-	AddThread(slug string, thread *m.Thread) (*m.Thread, *m.Error)
+	AddThread(slug string, thread *m.Thread) *ApiResponse
 
-	AddUser(nickname string, user *m.User) (*m.User, []*m.User, *m.Error)
+	AddUser(nickname string, user *m.User) *ApiResponse
 
-	GetServiceStatus() (*m.Status, *m.Error)
+	GetServiceStatus() *ApiResponse
 
-	GetForumDetails(slug string) (*m.Forum, *m.Error)
+	GetForumDetails(slug string) *ApiResponse
 
-	GetUserDetails(nickname string) (*m.User, *m.Error)
+	GetUserDetails(nickname string) *ApiResponse
 
-	GetThreadDetails(slug string) (*m.Thread, *m.Error)
+	GetThreadDetails(slug string) *ApiResponse
 
-	GetPostDetails(id int32, related []string) (*m.PostFull, *m.Error)
+	GetPostDetails(id int32, related []string) *ApiResponse
 
-	GetForumUsers(slug string, limit int, since string, desc bool) ([]*m.User, *m.Error)
+	GetForumUsers(slug string, limit int, since string, desc bool) *ApiResponse
 
-	GetForumThreads(slug string, limit int, since string, desc bool) ([]*m.Thread, *m.Error)
+	GetForumThreads(slug string, limit int, since string, desc bool) *ApiResponse
 
-	GetThreadPosts(slug string, limit int, since int, sort string, desc bool) ([]*m.Post, *m.Error)
+	GetThreadPosts(slug string, limit int, since int, sort string, desc bool) *ApiResponse
 
-	UpdatePost(id int64, update *m.PostUpdate) (*m.Post, *m.Error)
+	UpdatePost(id int64, update *m.PostUpdate) *ApiResponse
 
-	UpdateThread(slug string, thread *m.ThreadUpdate) (*m.Thread, *m.Error)
+	UpdateThread(slug string, thread *m.ThreadUpdate) *ApiResponse
 
-	VipeServiceStatus() *m.Error
+	VipeServiceStatus() *ApiResponse
 
-	VoteForThread(slug string, vote *m.Vote) (*m.Thread, *m.Error)
+	VoteForThread(slug string, vote *m.Vote) *ApiResponse
 
-	UpdateUser(nickname string, update *m.UserUpdate) (*m.User, *m.Error)
+	UpdateUser(nickname string, update *m.UserUpdate) *ApiResponse
 }
