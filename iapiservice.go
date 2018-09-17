@@ -13,7 +13,7 @@ type ApiResponse struct {
 type IApiService interface {
 	AddForum(forum *m.Forum) *ApiResponse
 
-	AddPosts(slug string, posts []*m.Post) *ApiResponse
+	AddPosts(slug string, posts []m.Post) *ApiResponse
 
 	AddThread(slug string, thread *m.Thread) *ApiResponse
 

@@ -14,7 +14,7 @@ type ApiHandler struct {
 
 func NewApiHandler() *ApiHandler {
 	api := new(ApiHandler)
-	api.apiService = new(ApiService)
+	api.apiService = NewApiService("sqlite3", "./data/forum.db")
 
 	return api
 }
@@ -42,12 +42,15 @@ func (h *ApiHandler) AddThread(ctx iris.Context) {
 }
 
 func (h *ApiHandler) AddPosts(ctx iris.Context) {
-	ctx.StatusCode(404)
-	ctx.Write([]byte("404\n"))
+	slug := ctx.Params().Get("slug_or_id")
+	posts := new([]m.Post)
+	ctx.ReadJSON(posts)
+
+	WriteResponse(h.apiService.AddPosts(slug, *posts), ctx)
 }
 
 func (h *ApiHandler) AddUser(ctx iris.Context) {
-	nickname := ctx.URLParam("nickname")
+	nickname := ctx.Params().Get("nickname")
 	user := new(m.User)
 	ctx.ReadJSON(user)
 
@@ -64,7 +67,7 @@ func (h *ApiHandler) GetForumDetails(ctx iris.Context) {
 }
 
 func (h *ApiHandler) GetUserDetails(ctx iris.Context) {
-	nickname := ctx.URLParam("nickname")
+	nickname := ctx.Params().Get("nickname")
 	WriteResponse(h.apiService.GetUserDetails(nickname), ctx)
 }
 
