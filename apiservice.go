@@ -7,40 +7,27 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// sql.DB не настоящий коннект к бд, а абстракция, которая управляет коннектами
+
 type ApiService struct {
-	connector  string
-	connection string
+	db *sql.DB
 }
 
-func NewApiService(connector string, connection string) *ApiService {
-	service := &ApiService{
-		connector:  connector,
-		connection: connection,
-	}
-
-	return service
-}
-
-func (s *ApiService) OpenDbConnection() (*sql.DB, *ApiResponse) {
-	db, err := sql.Open(s.connector, s.connection)
+func NewApiService(connector string, connection string) (*ApiService, error) {
+	db, err := sql.Open(connector, connection)
 	if err != nil {
-		return nil, &ApiResponse{
-			Code:     500,
-			Response: m.Error{err.Error()},
-		}
+		return nil, err
+	}
+	
+	service := &ApiService{
+		db: db,
 	}
 
-	return db, nil
+	return service, nil
 }
 
 func (s *ApiService) AddForum(forum *m.Forum) *ApiResponse { //(*m.Forum, *m.Error) {}
-	db, err := s.OpenDbConnection()
-	if(err != nil) {
-		return err
-	}
-	defer db.Close()
-
-	return &ApiResponse{ Code: 200, Response: new(m.Forum)}
+	return &ApiResponse{Code: 200, Response: new(m.Forum)}
 }
 
 func (s *ApiService) AddPosts(slug string, posts []m.Post) *ApiResponse { //([]*m.Post, *m.Error) {
@@ -54,13 +41,7 @@ func (s *ApiService) AddThread(slug string, thread *m.Thread) *ApiResponse { //*
 }
 
 func (s *ApiService) AddUser(nickname string, user *m.User) *ApiResponse { //(*m.User, []*m.User, *m.Error) {
-	db, err := s.OpenDbConnection()
-	if(err != nil) {
-		return err
-	}
-	defer db.Close()
-
-	return &ApiResponse{ Code: 200, Response: new(m.User)}
+	return &ApiResponse{Code: 200, Response: new(m.User)}
 }
 
 func (s *ApiService) GetServiceStatus() *ApiResponse { //(*m.Status, *m.Error) {

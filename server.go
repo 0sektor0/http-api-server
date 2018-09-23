@@ -6,8 +6,15 @@ import (
 	"github.com/kataras/iris/middleware/recover"
 )
 
-func BuildServer() *iris.Application {
-	api := NewApiHandler()
+func BuildServer(cfg *Configs) (*iris.Application, error) {
+	apiService, err := NewApiService(cfg.Connector, cfg.Connection)
+	if err != nil {
+		return nil, err
+	}
+
+	api := &ApiHandler {
+		apiService: apiService,
+	}
 
 	app := iris.New()
 	app.Logger().SetLevel("debug")
@@ -33,5 +40,5 @@ func BuildServer() *iris.Application {
 	app.Get("api/user/{nickname}/profile", api.GetUserDetails)
 	app.Post("api/user/{nickname}/profile", api.UpdateUser)
 
-	return app
+	return app, nil
 }

@@ -7,16 +7,9 @@ import (
 	"github.com/kataras/iris"
 )
 
-//this struct is proxy between network and api logic
+//посредник между сетью и логикой апи
 type ApiHandler struct {
 	apiService IApiService
-}
-
-func NewApiHandler() *ApiHandler {
-	api := new(ApiHandler)
-	api.apiService = NewApiService("sqlite3", "./data/forum.db")
-
-	return api
 }
 
 func WriteResponse(response *ApiResponse, ctx iris.Context) {
