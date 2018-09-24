@@ -5,14 +5,15 @@ import (
 	m "projects/http-api-server/models"
 
 	"github.com/kataras/iris"
+	api "projects/http-api-server/api"
 )
 
 //посредник между сетью и логикой апи
 type ApiHandler struct {
-	apiService IApiService
+	apiService api.IApiService
 }
 
-func WriteResponse(response *ApiResponse, ctx iris.Context) {
+func WriteResponse(response *api.ApiResponse, ctx iris.Context) {
 	data, _ := json.Marshal(response.Response)
 
 	ctx.StatusCode(response.Code)

@@ -4,10 +4,12 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
+
+	api "projects/http-api-server/api"
 )
 
 func BuildServer(cfg *Configs) (*iris.Application, error) {
-	apiService, err := NewApiService(cfg.Connector, cfg.Connection)
+	apiService, err := api.NewApiService(cfg.Connector, cfg.Connection)
 	if err != nil {
 		return nil, err
 	}

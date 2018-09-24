@@ -23,7 +23,6 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
-[Dd]ata/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -265,5 +264,5 @@ __pycache__/
 
 #other
 **/.vscode
-**/data
 **/bin
+**/cfg.json 
