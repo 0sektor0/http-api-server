@@ -1,13 +1,13 @@
-CREATE TABLE Users (
+CREATE TABLE user (
 	id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	nickname varchar(20) NOT NULL,
+	nickname varchar(20) UNIQUE NOT NULL,
 	email varchar(50) NOT NULL,
 	fullname varchar(50),
 	is_delited bool DEFAULT false,
 	about varchar(255)
 );
 
-CREATE TABLE Forums (
+CREATE TABLE forum (
 	id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	admin_id INTEGER,
 	title VARCHAR(50) DEFAULT "",
@@ -16,7 +16,7 @@ CREATE TABLE Forums (
 	FOREIGN KEY (admin_id) REFERENCES Users(id) ON DELETE SET NULL
 );
 
-CREATE TABLE Threads (
+CREATE TABLE thread (
 	id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	author_id INTEGER,
 	forum_id INTEGER,
@@ -29,7 +29,7 @@ CREATE TABLE Threads (
 	FOREIGN KEY (forum_id) REFERENCES Forums(id) ON DELETE CASCADE
 );
 
-CREATE TABLE Votes (
+CREATE TABLE vote (
 	id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	user_id INTEGER NOT NULL,
 	thread_id INTEGER NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE Votes (
 	FOREIGN KEY (thread_id) REFERENCES Threads(id) ON DELETE CASCADE
 );
 
-CREATE TABLE Posts (
+CREATE TABLE post (
 	id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	user_id INTEGER,
 	parent_id INTEGER,

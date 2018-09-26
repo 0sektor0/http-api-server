@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	m "projects/http-api-server/models"
 
-	"github.com/kataras/iris"
 	rest "projects/http-api-server/restapi"
+
+	"github.com/kataras/iris"
 )
 
 //посредник между сетью и логикой апи
@@ -14,8 +16,12 @@ type ApiHandler struct {
 }
 
 func WriteResponse(response *rest.ApiResponse, ctx iris.Context) {
-	data, _ := json.Marshal(response.Response)
+	data, err := json.Marshal(response.Response)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
+	ctx.ContentType("application/json")
 	ctx.StatusCode(response.Code)
 	ctx.Write(data)
 }

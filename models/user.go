@@ -3,10 +3,10 @@ package models
 import "encoding/json"
 
 type User struct {
-	About    string `json:"about"`
+	About    string `json:"about,omitempty"`
 	Email    string `json:"email"`
-	FullName string `json:"fullname"`
-	NickName string `json:"nickname"`
+	Fullname string `json:"fullname"`
+	Nickname string `json:"nickname,omitempty"`
 }
 
 func UnmarshalUser(b []byte) (*User, error) {

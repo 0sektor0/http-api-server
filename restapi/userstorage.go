@@ -12,7 +12,13 @@ type UsersStorage struct {
 }
 
 func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(*m.User, []*m.User, *m.Error) {
-	return &ApiResponse{Code: 200, Response: new(m.User)}
+	_, err := s.db.Query("INSERT INTO user (about, email, fullname) VALUES('?', '?', '?')", user.About, user.Email, user.Fullname)
+	if err != nil {
+		return &ApiResponse{Code: 500, Response: &m.Error{"500"}}
+	}
+
+	user.Nickname=nickname;
+	return &ApiResponse{Code: 201, Response: user}
 }
 
 func (s *UsersStorage) UpdateUser(nickname string, update *m.UserUpdate) *ApiResponse { //(*m.User, *m.Error) {

@@ -4,12 +4,6 @@ import (
 	m "projects/http-api-server/models"
 )
 
-// ответ от сервиса работы с апи
-type ApiResponse struct {
-	Code     int
-	Response interface{}
-}
-
 type IUsersStorage interface {
 	AddUser(nickname string, user *m.User) *ApiResponse
 
