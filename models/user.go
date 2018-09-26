@@ -1,6 +1,9 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"database/sql"
+)
 
 type User struct {
 	About    string `json:"about,omitempty"`
@@ -17,4 +20,11 @@ func UnmarshalUser(b []byte) (*User, error) {
 	}
 
 	return unmarshaledStruct, nil
+}
+
+func ScanUserFromRows(rows *sql.Rows) (*User, error) {
+	user := new(User)
+	err := rows.Scan(&user.About, &user.Email, &user.Fullname, &user.Nickname)
+
+	return user, err
 }

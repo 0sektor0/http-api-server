@@ -1,10 +1,10 @@
 CREATE TABLE user (
 	id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	nickname varchar(20) UNIQUE NOT NULL,
-	email varchar(50) NOT NULL,
+	email varchar(50) UNIQUE NOT NULL,
 	fullname varchar(50),
-	is_delited bool DEFAULT false,
-	about varchar(255)
+	about varchar(255),
+	is_delited bool DEFAULT false
 );
 
 CREATE TABLE forum (
