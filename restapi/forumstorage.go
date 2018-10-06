@@ -12,6 +12,8 @@ type ForumsStorage struct {
 }
 
 func (s *ForumsStorage) AddForum(forum *m.Forum) *ApiResponse { //(*m.Forum, *m.Error) {}
+	
+
 	return &ApiResponse{Code: 200, Response: new(m.Forum)}
 }
 

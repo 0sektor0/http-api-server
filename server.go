@@ -28,6 +28,9 @@ func BuildServer(cfg *Configs) (*iris.Application, error) {
 	app.Post("api/user/{nickname}/create", apiHandler.AddUser)
 	//started
 	app.Get("api/user/{nickname}/profile", apiHandler.GetUserDetails)
+	app.Post("api/user/{nickname}/profile", apiHandler.UpdateUser)
+	app.Post("api/forum/{slug:string}/create", apiHandler.AddThread)
+	//TODO
 	app.Post("api/forum/create", apiHandler.AddForum)
 	app.Post("api/forum/{slug:string}/create", apiHandler.AddThread)
 	app.Get("api/forum/{slug:string}/details", apiHandler.GetForumDetails)
@@ -42,7 +45,6 @@ func BuildServer(cfg *Configs) (*iris.Application, error) {
 	app.Post("api/thread/{slug_or_id:string}/details", apiHandler.UpdateThread)
 	app.Get("api/thread/{slug_or_id:string}/posts", apiHandler.GetThreadPosts)
 	app.Post("api/thread/{slug_or_id:string}/vote", apiHandler.VoteForThread)
-	app.Post("api/user/{nickname}/profile", apiHandler.UpdateUser)
 
 	return app, nil
 }

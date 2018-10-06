@@ -138,8 +138,9 @@ func (h *ApiHandler) VoteForThread(ctx iris.Context) {
 }
 
 func (h *ApiHandler) UpdateUser(ctx iris.Context) {
-	nickname := ctx.URLParam("nickname")
-	userUpdate := new(m.UserUpdate)
+	nickname := ctx.Params().Get("nickname")
+	userUpdate := new(m.User)
+	ctx.ReadJSON(userUpdate)
 
 	WriteResponse(h.apiService.Users.UpdateUser(nickname, userUpdate), ctx)
 }

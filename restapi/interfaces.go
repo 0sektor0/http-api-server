@@ -9,7 +9,7 @@ type IUsersStorage interface {
 
 	GetUserDetails(nickname string) *ApiResponse
 
-	UpdateUser(nickname string, update *m.UserUpdate) *ApiResponse
+	UpdateUser(nickname string, update *m.User) *ApiResponse
 }
 
 type IForumsStorage interface {
