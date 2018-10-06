@@ -2,12 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"log"
-	m "projects/http-api-server/models"
-
-	rest "projects/http-api-server/restapi"
-
 	"github.com/kataras/iris"
+	"log"
+
+	m "projects/http-api-server/models"
+	rest "projects/http-api-server/restapi"
 )
 
 //посредник между сетью и логикой апи

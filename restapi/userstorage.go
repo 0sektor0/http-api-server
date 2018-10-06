@@ -20,6 +20,7 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 		user.Fullname,
 		nickname)
 
+	//пользователь успешно добавлен
 	if err == nil {
 		user.Nickname = nickname
 		log.Println(user)
@@ -39,7 +40,7 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 
 	existingUsers := make([]*m.User, 0)
 	for rows.Next() {
-		user, err := m.ScanUserFromRows(rows)
+		user, err := ScanUserFromRows(rows)
 
 		if err != nil {
 			log.Fatalln(err)
