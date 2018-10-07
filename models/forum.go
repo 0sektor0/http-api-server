@@ -5,8 +5,9 @@ import (
 )
 
 type Forum struct {
-	Threads int32  `json:"threads"`
-	Posts   int64  `json:"posts"`
+	Id      int64  `json:"-"`
+	Threads int32  `json:"threads,omitempty"`
+	Posts   int64  `json:"posts,omitempty"`
 	Title   string `json:"title"`
 	Slug    string `json:"slug"`
 	User    string `json:"user"`

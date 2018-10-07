@@ -29,7 +29,7 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 		return &ApiResponse{Code: http.StatusCreated, Response: user}
 	}
 
-	rows, err := s.db.Query(`SELECT about, email, fullname, nickname 
+	rows, err := s.db.Query(`SELECT id, about, email, fullname, nickname 
 		FROM fuser 
 		WHERE ci_nickname=LOWER($1) OR ci_email=LOWER($2)`,
 		nickname,
@@ -62,33 +62,25 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 }
 
 func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse { //(*m.User, *m.Error) {
-	_, err := s.db.Exec(`UPDATE fuser
+	row := s.db.QueryRow (`UPDATE fuser
 	SET about=$1, email=$2, fullname=$3
-	WHERE ci_nickname=LOWER($4)`,
+	WHERE ci_nickname=LOWER($4)
+	REtuRNING id, about, email, fullname, nickname`,
 		update.About,
 		update.Email,
 		update.Fullname,
 		nickname)
 
-	if err != nil {
-		return &ApiResponse{Code: http.StatusConflict, Response: err}
-	}
-
-	row := s.db.QueryRow(`SELECT about, email, fullname, nickname 
-	FROM fuser 
-	WHERE ci_nickname=LOWER($1)`,
-		nickname)
-
 	user, err := ScanUserFromRow(row)
 	if err != nil {
-		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+		return &ApiResponse{Code: http.StatusConflict, Response: err}
 	}
 
 	return &ApiResponse{Code: http.StatusOK, Response: user}
 }
 
 func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User, *m.Error) {
-	row := s.db.QueryRow(`SELECT about, email, fullname, nickname 
+	row := s.db.QueryRow(`SELECT id, about, email, fullname, nickname 
 	FROM fuser 
 	WHERE ci_nickname=LOWER($1)`,
 		nickname)

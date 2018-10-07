@@ -14,17 +14,16 @@ type ForumsStorage struct {
 }
 
 func (s *ForumsStorage) AddForum(forum *m.Forum) *ApiResponse { //(*m.Forum, *m.Error) {}
-	/*_, err := s.db.Exec(`INSERT INTO forum (title, slug, admin_d) 
-	VALUES ($1, $2, SELECT id FROM user WHERE nickname=$3)`,
+	_, err := s.db.Exec(`INSERT INTO forum (title, slug, admin_id) 
+	VALUES ($1, $2, (SELECT id FROM fuser WHERE nickname=$3))`,
 		forum.Title,
 		forum.Slug,
 		forum.User)
 
-	if err!=nil {
-		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	//форум успешно добавлен
+	if err==nil {
+		return &ApiResponse{Code: http.StatusCreated, Response: forum}
 	}
-
-	row, err := s.db.QueryRow()*/
 
 	return &ApiResponse{Code: http.StatusOK, Response: new(m.Forum)}
 }

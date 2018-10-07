@@ -26,9 +26,9 @@ func BuildServer(cfg *Configs) (*iris.Application, error) {
 
 	//success
 	app.Post("api/user/{nickname}/create", apiHandler.AddUser)
-	//started
 	app.Get("api/user/{nickname}/profile", apiHandler.GetUserDetails)
 	app.Post("api/user/{nickname}/profile", apiHandler.UpdateUser)
+	//started
 	app.Post("api/forum/{slug:string}/create", apiHandler.AddThread)
 	//TODO
 	app.Post("api/forum/create", apiHandler.AddForum)

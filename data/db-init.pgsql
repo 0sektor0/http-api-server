@@ -18,8 +18,8 @@ CREATE TABLE fuser (
 CREATE TABLE forum (
 	id serial PRIMARY KEY,
 	admin_id integer,
-	title text,
-	slug text,
+	title text UNIQUE NOT NULL,
+	slug text UNIQUE NOT NULL,
 	is_delited bool DEFAULT false,
 	FOREIGN KEY (admin_id) REFERENCES fuser(id) ON DELETE SET NULL
 );
