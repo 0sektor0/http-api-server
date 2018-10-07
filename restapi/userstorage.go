@@ -8,6 +8,7 @@ import (
 	m "projects/http-api-server/models"
 
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type UsersStorage struct {
@@ -15,7 +16,7 @@ type UsersStorage struct {
 }
 
 func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(*m.User, []*m.User, *m.Error) {
-	_, err := s.db.Exec("INSERT INTO user (about, email, fullname, nickname) VALUES($1, $2, $3, $4)",
+	_, err := s.db.Exec("INSERT INTO fuser (about, email, ci_email, fullname, nickname, ci_nickname) VALUES($1, $2, LOWER($2), $3, $4, LOWER($4))",
 		user.About,
 		user.Email,
 		user.Fullname,
@@ -29,8 +30,8 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 	}
 
 	rows, err := s.db.Query(`SELECT about, email, fullname, nickname 
-		FROM user 
-		WHERE nickname=$1 OR email=$2`,
+		FROM fuser 
+		WHERE ci_nickname=LOWER($1) OR ci_email=LOWER($2)`,
 		nickname,
 		user.Email)
 
@@ -61,9 +62,9 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 }
 
 func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse { //(*m.User, *m.Error) {
-	_, err := s.db.Exec(`UPDATE user
+	_, err := s.db.Exec(`UPDATE fuser
 	SET about=$1, email=$2, fullname=$3
-	WHERE nickname=$5`,
+	WHERE ci_nickname=LOWER($4)`,
 		update.About,
 		update.Email,
 		update.Fullname,
@@ -74,8 +75,8 @@ func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse 
 	}
 
 	row := s.db.QueryRow(`SELECT about, email, fullname, nickname 
-	FROM user 
-	WHERE nickname=$1`,
+	FROM fuser 
+	WHERE ci_nickname=LOWER($1)`,
 		nickname)
 
 	user, err := ScanUserFromRow(row)
@@ -88,8 +89,8 @@ func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse 
 
 func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User, *m.Error) {
 	row := s.db.QueryRow(`SELECT about, email, fullname, nickname 
-	FROM user 
-	WHERE nickname=$1`,
+	FROM fuser 
+	WHERE ci_nickname=LOWER($1)`,
 		nickname)
 
 	user, err := ScanUserFromRow(row)

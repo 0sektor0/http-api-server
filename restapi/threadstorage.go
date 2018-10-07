@@ -5,6 +5,7 @@ import (
 	m "projects/http-api-server/models"
 
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type ThreadsStorage struct {

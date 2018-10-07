@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type ServiceStorage struct {
