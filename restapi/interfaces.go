@@ -5,11 +5,11 @@ import (
 )
 
 type IUsersStorage interface {
-	AddUser(nickname string, user *m.User) *ApiResponse
+	AddUser(user *m.User) *ApiResponse
 
 	GetUserDetails(nickname string) *ApiResponse
 
-	UpdateUser(nickname string, update *m.User) *ApiResponse
+	UpdateUser(update *m.User) *ApiResponse
 }
 
 type IForumsStorage interface {

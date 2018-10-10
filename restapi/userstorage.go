@@ -5,26 +5,24 @@ import (
 	"log"
 	"net/http"
 
-	m "projects/http-api-server/models"
-
-	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
+	m "projects/http-api-server/models"
 )
 
 type UsersStorage struct {
 	db *sql.DB
 }
 
-func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(*m.User, []*m.User, *m.Error) {
+func (s *UsersStorage) AddUser(user *m.User) *ApiResponse { //(*m.User, []*m.User, *m.Error) {
 	_, err := s.db.Exec("INSERT INTO fuser (about, email, ci_email, fullname, nickname, ci_nickname) VALUES($1, $2, LOWER($2), $3, $4, LOWER($4))",
 		user.About,
 		user.Email,
 		user.Fullname,
-		nickname)
+		user.Nickname)
 
 	//пользователь успешно добавлен
 	if err == nil {
-		user.Nickname = nickname
 		log.Println(user)
 		return &ApiResponse{Code: http.StatusCreated, Response: user}
 	}
@@ -32,7 +30,7 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 	rows, err := s.db.Query(`SELECT id, about, email, fullname, nickname 
 		FROM fuser 
 		WHERE ci_nickname=LOWER($1) OR ci_email=LOWER($2)`,
-		nickname,
+		user.Nickname,
 		user.Email)
 
 	if err != nil {
@@ -61,22 +59,42 @@ func (s *UsersStorage) AddUser(nickname string, user *m.User) *ApiResponse { //(
 	return &ApiResponse{Code: http.StatusConflict, Response: existingUsers}
 }
 
-func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse { //(*m.User, *m.Error) {
-	row := s.db.QueryRow (`UPDATE fuser
-	SET about=$1, email=$2, fullname=$3
-	WHERE ci_nickname=LOWER($4)
-	REtuRNING id, about, email, fullname, nickname`,
+//очень плохой код
+func (s *UsersStorage) UpdateUser(update *m.User) *ApiResponse { //(*m.User, *m.Error) {
+	row := s.db.QueryRow(`
+	SELECT id, about, email, fullname, nickname 
+	FROM fuser 
+	WHERE ci_nickname=LOWER($1)`,
+		update.Nickname)
+
+	oldUser, err := ScanUserFromRow(row)
+	if err != nil {
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	if update.About == "" {
+		update.About = oldUser.About
+	}
+	if update.Email == "" {
+		update.Email = oldUser.Email
+	}
+	if update.Fullname == "" {
+		update.Fullname = oldUser.Fullname
+	}
+
+	_, err = s.db.Exec(`UPDATE fuser
+	SET about=$1, email=$2, ci_email=LOWER($2), fullname=$3
+	WHERE ci_nickname=LOWER($4)`,
 		update.About,
 		update.Email,
 		update.Fullname,
-		nickname)
+		update.Nickname)
 
-	user, err := ScanUserFromRow(row)
 	if err != nil {
 		return &ApiResponse{Code: http.StatusConflict, Response: err}
 	}
 
-	return &ApiResponse{Code: http.StatusOK, Response: user}
+	return &ApiResponse{Code: http.StatusOK, Response: update}
 }
 
 func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User, *m.Error) {

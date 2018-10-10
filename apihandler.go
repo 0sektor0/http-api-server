@@ -51,9 +51,11 @@ func (h *ApiHandler) AddPosts(ctx iris.Context) {
 func (h *ApiHandler) AddUser(ctx iris.Context) {
 	nickname := ctx.Params().Get("nickname")
 	user := new(m.User)
+	
 	ctx.ReadJSON(user)
+	user.Nickname = nickname
 
-	WriteResponse(h.apiService.Users.AddUser(nickname, user), ctx)
+	WriteResponse(h.apiService.Users.AddUser(user), ctx)
 }
 
 func (h *ApiHandler) GetServiceStatus(ctx iris.Context) {
@@ -140,7 +142,9 @@ func (h *ApiHandler) VoteForThread(ctx iris.Context) {
 func (h *ApiHandler) UpdateUser(ctx iris.Context) {
 	nickname := ctx.Params().Get("nickname")
 	userUpdate := new(m.User)
+	
 	ctx.ReadJSON(userUpdate)
+	userUpdate.Nickname = nickname
 
-	WriteResponse(h.apiService.Users.UpdateUser(nickname, userUpdate), ctx)
+	WriteResponse(h.apiService.Users.UpdateUser(userUpdate), ctx)
 }
