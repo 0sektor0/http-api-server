@@ -28,12 +28,11 @@ func BuildServer(cfg *Configs) (*iris.Application, error) {
 	app.Post("api/user/{nickname}/create", apiHandler.AddUser)
 	app.Get("api/user/{nickname}/profile", apiHandler.GetUserDetails)
 	app.Post("api/user/{nickname}/profile", apiHandler.UpdateUser)
-	//started
-	app.Post("api/forum/{slug:string}/create", apiHandler.AddThread)
-	//TODO
 	app.Post("api/forum/create", apiHandler.AddForum)
-	app.Post("api/forum/{slug:string}/create", apiHandler.AddThread)
+	//started
 	app.Get("api/forum/{slug:string}/details", apiHandler.GetForumDetails)
+	//TODO
+	app.Post("api/forum/{slug:string}/create", apiHandler.AddThread)
 	app.Get("api/forum/{slug:string}/threads", apiHandler.GetForumThreads)
 	app.Get("api/forum/{slug:string}/users", apiHandler.GetForumUsers)
 	app.Get("api/post/{id:int}/details", apiHandler.GetPostDetails)

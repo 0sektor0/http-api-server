@@ -18,7 +18,7 @@ CREATE TABLE fuser (
 CREATE TABLE forum (
 	id serial PRIMARY KEY,
 	admin_id integer NOT NULL,
-	title text UNIQUE NOT NULL,
+	title text NOT NULL,
 	slug text UNIQUE NOT NULL,
 	ci_slug text UNIQUE NOT NULL,
 	is_delited bool DEFAULT false,
