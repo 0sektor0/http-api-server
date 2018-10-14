@@ -17,9 +17,10 @@ CREATE TABLE fuser (
 
 CREATE TABLE forum (
 	id serial PRIMARY KEY,
-	admin_id integer,
+	admin_id integer NOT NULL,
 	title text UNIQUE NOT NULL,
 	slug text UNIQUE NOT NULL,
+	ci_slug text UNIQUE NOT NULL,
 	is_delited bool DEFAULT false,
 	FOREIGN KEY (admin_id) REFERENCES fuser(id) ON DELETE SET NULL
 );
@@ -30,7 +31,8 @@ CREATE TABLE thread (
 	forum_id integer,
 	title text,
 	message text,
-	slug text,
+	slug text UNIQUE NOT NULL,
+	ci_slug text UNIQUE NOT NULL,
 	created timestamp,
 	is_delited bool DEFAULT false,
 	FOREIGN KEY (author_id) REFERENCES fuser(id) ON DELETE SET NULL,
