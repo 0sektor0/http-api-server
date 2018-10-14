@@ -22,10 +22,6 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 		thread.Created = fmt.Sprintf("%v", time.Now().Format(time.RFC3339)) 
 	}
 	
-	/*if thread.Slug == "" {
-		thread.Slug = fmt.Sprintf("%v-%v-%v", thread.Author, thread.Forum, thread.Created)
-	}*/
-	
 	row := s.db.QueryRow(`WITH u AS (
 		SELECT id, nickname
 		FROM fuser

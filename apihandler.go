@@ -124,7 +124,7 @@ func (h *ApiHandler) UpdatePost(ctx iris.Context) {
 func (h *ApiHandler) UpdateThread(ctx iris.Context) {
 	thread := new(m.Thread)
 	ctx.ReadJSON(thread)
-	thread.Slug = ctx.Params().Get("slug")
+	thread.Forum = ctx.Params().Get("slug")
 
 	WriteResponse(h.apiService.Threads.UpdateThread(thread), ctx)
 }
