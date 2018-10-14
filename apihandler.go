@@ -35,7 +35,7 @@ func (h *ApiHandler) AddForum(ctx iris.Context) {
 func (h *ApiHandler) AddThread(ctx iris.Context) {
 	thread := new(m.Thread)
 	ctx.ReadJSON(thread)
-	thread.Slug = ctx.Params().Get("slug")
+	thread.Forum = ctx.Params().Get("slug")
 
 	WriteResponse(h.apiService.Threads.AddThread(thread), ctx)
 }

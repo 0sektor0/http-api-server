@@ -1,7 +1,10 @@
 package restapi
 
 import (
+	"time"
+	"log"
 	"database/sql"
+	"fmt"
 	pq "github.com/lib/pq"
 	"net/http"
 	m "projects/http-api-server/models"
@@ -15,19 +18,26 @@ type ThreadsStorage struct {
 }
 
 func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread, *m.Error) {
+	if thread.Created == "" {
+		thread.Created = fmt.Sprintf("%v", time.Now().Format(time.RFC3339)) 
+	}
+	
+	/*if thread.Slug == "" {
+		thread.Slug = fmt.Sprintf("%v-%v-%v", thread.Author, thread.Forum, thread.Created)
+	}*/
+	
 	row := s.db.QueryRow(`WITH u AS (
 		SELECT id, nickname
 		FROM fuser
-		WHERE ci_nickname=LOWER($2)
+		WHERE ci_nickname=LOWER($1)
 	), f AS (
 		SELECT id, slug
 		FROM forum 
-		WHERE ci_slug=LOWER($3) 
+		WHERE ci_slug=LOWER($2) 
 	)
-	INSERT INTO thread (id, author_id, forum_id, title, message, slug, ci_slug, created)
-	VALUES ($1, (SELECT id FROM u), (SELECT id FROM f), $4, $5, '$6', LOWER($6), $7)
+	INSERT INTO thread (author_id, forum_id, title, message, slug, ci_slug, created)
+	VALUES ((SELECT id FROM u), (SELECT id FROM f), $3, $4, $5, LOWER($5), $6)
 	RETURNING id, slug, title, 0, (SELECT slug FROM f), (SELECT nickname FROM u), created, message`,
-		thread.Id,
 		thread.Author,
 		thread.Forum,
 		thread.Title,
@@ -41,23 +51,34 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 		return &ApiResponse{Code: http.StatusCreated, Response: addedThread}
 	}
 
+	log.Println(err)
 	pgErr := err.(*pq.Error)
 	if pgErr.Code == notFoundError {
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
 
-	row = s.db.QueryRow(`WITH f AS (
-		SELECT id, admin_id, title, slug
-		FROM forum 
-		WHERE ci_slug=LOWER($1)
+	row = s.db.QueryRow(`WITH t AS (
+		SELECT t.id, t.slug, t.title, f.slug AS forum_slug, u.nickname, t.created, t.message
+		FROM thread AS t
+		LEFT JOIN forum AS f ON f.id=t.forum_id
+		LEFT JOIN fuser AS u ON u.id=t.author_id
+		WHERE u.ci_nickname=LOWER($1) AND f.ci_slug=LOWER($2) AND t.title=$3 AND t.message=$4 AND t.created=$5 AND t.ci_slug=LOWER($6)
 	)
-	SELECT f.id, 0 AS posts, f.slug, 0 AS threads, f.title, u.nickname
-	FROM f
-	LEFT JOIN fuser AS u ON u.id=f.admin_id `,
-		thread.Slug)
+	SELECT t.id, t.slug, t.title, SUM(coalesce(v.voice, 0)), t.forum_slug, t.nickname, t.created, t.message
+	FROM t
+	LEFT JOIN vote AS v ON t.id=v.thread_id
+	GROUP BY t.id, t.title, t.slug, t.nickname, t.created, t.message`,
+		thread.Author,
+		thread.Forum,
+		thread.Title,
+		thread.Message,
+		thread.Created,
+		thread.Slug,
+	)
 
 	oldThread, err := ScanForumFromRow(row)
-	return &ApiResponse{Code: http.StatusConflict, Response: oldThread}	
+	log.Println(err)
+	return &ApiResponse{Code: http.StatusConflict, Response: oldThread}
 }
 
 func (s *ThreadsStorage) GetThreadDetails(slug string) *ApiResponse { //(*m.Thread, *m.Error) {
