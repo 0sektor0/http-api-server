@@ -34,7 +34,7 @@ func (s *UsersStorage) AddUser(user *m.User) *ApiResponse { //(*m.User, []*m.Use
 		user.Email)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
 	}
 
@@ -43,7 +43,7 @@ func (s *UsersStorage) AddUser(user *m.User) *ApiResponse { //(*m.User, []*m.Use
 		user, err := ScanUserFromRow(rows)
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
 			return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
 		}
 
@@ -51,7 +51,7 @@ func (s *UsersStorage) AddUser(user *m.User) *ApiResponse { //(*m.User, []*m.Use
 	}
 
 	if err = rows.Err(); err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
 	}
 
@@ -69,6 +69,7 @@ func (s *UsersStorage) UpdateUser(update *m.User) *ApiResponse { //(*m.User, *m.
 
 	oldUser, err := ScanUserFromRow(row)
 	if err != nil {
+		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
 
@@ -91,6 +92,7 @@ func (s *UsersStorage) UpdateUser(update *m.User) *ApiResponse { //(*m.User, *m.
 		update.Nickname)
 
 	if err != nil {
+		log.Println(err)
 		return &ApiResponse{Code: http.StatusConflict, Response: err}
 	}
 
@@ -105,6 +107,7 @@ func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User
 
 	user, err := ScanUserFromRow(row)
 	if err != nil {
+		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
 

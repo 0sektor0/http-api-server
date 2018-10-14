@@ -47,9 +47,9 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 		return &ApiResponse{Code: http.StatusCreated, Response: addedThread}
 	}
 
-	log.Println(err)
 	pgErr := err.(*pq.Error)
 	if pgErr.Code == notFoundError {
+		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
 
@@ -73,7 +73,11 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 	)
 
 	oldThread, err := ScanForumFromRow(row)
-	log.Println(err)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
 	return &ApiResponse{Code: http.StatusConflict, Response: oldThread}
 }
 
