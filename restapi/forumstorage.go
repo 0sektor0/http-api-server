@@ -10,10 +10,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const (
-	notFoundError = "23502"
-)
-
 type ForumsStorage struct {
 	db *sql.DB
 }
@@ -29,7 +25,8 @@ func (s *ForumsStorage) AddForum(forum *m.Forum) *ApiResponse { //(*m.Forum, *m.
 	RETURNING id, 0, slug, 0, title, (SELECT nickname FROM u)`,
 		forum.Title,
 		forum.Slug,
-		forum.User)
+		forum.User,
+	)
 
 	addedForum, err := ScanForumFromRow(row)
 	if err == nil {

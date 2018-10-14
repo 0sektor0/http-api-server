@@ -23,13 +23,13 @@ type IForumsStorage interface {
 }
 
 type IThreadsStorage interface {
-	AddThread(slug string, thread *m.Thread) *ApiResponse
+	AddThread(thread *m.Thread) *ApiResponse
 
 	GetThreadDetails(slug string) *ApiResponse
 
 	GetThreadPosts(slug string, limit int, since int, sort string, desc bool) *ApiResponse
 
-	UpdateThread(slug string, thread *m.ThreadUpdate) *ApiResponse
+	UpdateThread(thread *m.Thread) *ApiResponse
 
 	VoteForThread(slug string, vote *m.Vote) *ApiResponse
 }

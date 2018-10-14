@@ -33,11 +33,11 @@ func (h *ApiHandler) AddForum(ctx iris.Context) {
 }
 
 func (h *ApiHandler) AddThread(ctx iris.Context) {
-	slug := ctx.Params().Get("slug")
 	thread := new(m.Thread)
 	ctx.ReadJSON(thread)
+	thread.Slug = ctx.Params().Get("slug")
 
-	WriteResponse(h.apiService.Threads.AddThread(slug, thread), ctx)
+	WriteResponse(h.apiService.Threads.AddThread(thread), ctx)
 }
 
 func (h *ApiHandler) AddPosts(ctx iris.Context) {
@@ -51,7 +51,7 @@ func (h *ApiHandler) AddPosts(ctx iris.Context) {
 func (h *ApiHandler) AddUser(ctx iris.Context) {
 	nickname := ctx.Params().Get("nickname")
 	user := new(m.User)
-	
+
 	ctx.ReadJSON(user)
 	user.Nickname = nickname
 
@@ -122,10 +122,11 @@ func (h *ApiHandler) UpdatePost(ctx iris.Context) {
 }
 
 func (h *ApiHandler) UpdateThread(ctx iris.Context) {
-	slug := ctx.URLParam("slug_or_id")
-	threadUpdate := new(m.ThreadUpdate)
+	thread := new(m.Thread)
+	ctx.ReadJSON(thread)
+	thread.Slug = ctx.Params().Get("slug")
 
-	WriteResponse(h.apiService.Threads.UpdateThread(slug, threadUpdate), ctx)
+	WriteResponse(h.apiService.Threads.UpdateThread(thread), ctx)
 }
 
 func (h *ApiHandler) VipeServiceStatus(ctx iris.Context) {
@@ -142,7 +143,7 @@ func (h *ApiHandler) VoteForThread(ctx iris.Context) {
 func (h *ApiHandler) UpdateUser(ctx iris.Context) {
 	nickname := ctx.Params().Get("nickname")
 	userUpdate := new(m.User)
-	
+
 	ctx.ReadJSON(userUpdate)
 	userUpdate.Nickname = nickname
 

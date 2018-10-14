@@ -23,3 +23,11 @@ func ScanForumFromRow(row IRow) (*m.Forum, error) {
 
 	return f, err
 }
+
+//SELECT id, slug, title, votes, forum, author, created, message
+func ScanThreadFromRow(row IRow) (*m.Thread, error) {
+	t := new(m.Thread)
+	err := row.Scan(&t.Id, &t.Slug, &t.Title, &t.Votes, &t.Forum, &t.Author, &t.Created, &t.Message)
+
+	return t, err
+}
