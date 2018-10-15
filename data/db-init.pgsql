@@ -29,13 +29,12 @@ CREATE TABLE thread (
 	id 			serial PRIMARY KEY,
 	author_id 	integer NOT NULL,
 	forum_id 	integer NOT NULL,
-	title 		text,
-	message 	text,
+	title 		text UNIQUE,
+	message 	text UNIQUE,
 	slug 		text UNIQUE,
 	ci_slug 	text UNIQUE,
 	created 	timestamp with time zone,
 	is_delited 	bool DEFAULT false,
-	UNIQUE (author_id, forum_id, title, message, ci_slug, created),
 	FOREIGN KEY (author_id) REFERENCES fuser(id) ON DELETE CASCADE,
 	FOREIGN KEY (forum_id) REFERENCES forum(id) ON DELETE CASCADE
 );

@@ -58,21 +58,18 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 		FROM thread AS t
 		LEFT JOIN forum AS f ON f.id=t.forum_id
 		LEFT JOIN fuser AS u ON u.id=t.author_id
-		WHERE u.ci_nickname=LOWER($1) AND f.ci_slug=LOWER($2) AND t.title=$3 AND t.message=$4 AND t.created=$5 AND t.ci_slug=LOWER($6)
+		WHERE t.ci_slug=LOWER($1) OR t.title=$2 OR t.message=$3
 	)
 	SELECT t.id, t.slug, t.title, SUM(coalesce(v.voice, 0)), t.forum_slug, t.nickname, t.created, t.message
 	FROM t
 	LEFT JOIN vote AS v ON t.id=v.thread_id
-	GROUP BY t.id, t.title, t.slug, t.nickname, t.created, t.message`,
-		thread.Author,
-		thread.Forum,
+	GROUP BY t.id, t.title, t.slug, t.nickname, t.created, t.message, t.forum_slug`,
+		thread.Slug,
 		thread.Title,
 		thread.Message,
-		thread.Created,
-		thread.Slug,
 	)
 
-	oldThread, err := ScanForumFromRow(row)
+	oldThread, err := ScanThreadFromRow(row)
 	if err != nil {
 		log.Println(err)
 		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
