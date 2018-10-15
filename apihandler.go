@@ -134,8 +134,9 @@ func (h *ApiHandler) VipeServiceStatus(ctx iris.Context) {
 }
 
 func (h *ApiHandler) VoteForThread(ctx iris.Context) {
-	slug := ctx.URLParam("slug_or_id")
+	slug := ctx.Params().Get("slug_or_id")
 	vote := new(m.Vote)
+	ctx.ReadJSON(vote)
 
 	WriteResponse(h.apiService.Threads.VoteForThread(slug, vote), ctx)
 }

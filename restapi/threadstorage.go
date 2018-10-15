@@ -1,13 +1,14 @@
 package restapi
 
 import (
-	"time"
-	"log"
 	"database/sql"
 	"fmt"
 	pq "github.com/lib/pq"
+	"log"
 	"net/http"
 	m "projects/http-api-server/models"
+	"strconv"
+	"time"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
@@ -19,9 +20,9 @@ type ThreadsStorage struct {
 
 func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread, *m.Error) {
 	if thread.Created == "" {
-		thread.Created = fmt.Sprintf("%v", time.Now().Format(time.RFC3339)) 
+		thread.Created = fmt.Sprintf("%v", time.Now().Format(time.RFC3339))
 	}
-	
+
 	row := s.db.QueryRow(`WITH u AS (
 		SELECT id, nickname
 		FROM fuser
@@ -58,15 +59,13 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 		FROM thread AS t
 		LEFT JOIN forum AS f ON f.id=t.forum_id
 		LEFT JOIN fuser AS u ON u.id=t.author_id
-		WHERE t.ci_slug=LOWER($1) OR t.title=$2 OR t.message=$3
+		WHERE t.ci_slug=LOWER($1)
 	)
 	SELECT t.id, t.slug, t.title, SUM(coalesce(v.voice, 0)), t.forum_slug, t.nickname, t.created, t.message
 	FROM t
 	LEFT JOIN vote AS v ON t.id=v.thread_id
 	GROUP BY t.id, t.title, t.slug, t.nickname, t.created, t.message, t.forum_slug`,
 		thread.Slug,
-		thread.Title,
-		thread.Message,
 	)
 
 	oldThread, err := ScanThreadFromRow(row)
@@ -94,6 +93,50 @@ func (s *ThreadsStorage) UpdateThread(thread *m.Thread) *ApiResponse { //(*m.Thr
 }
 
 func (s *ThreadsStorage) VoteForThread(slug string, vote *m.Vote) *ApiResponse { //(*m.Thread, *m.Error) {
-	panic("unemplimented function")
-	return nil
+	threadId, err := strconv.Atoi(slug)
+	if err != nil {
+		threadId = 0
+	}
+
+	row := s.db.QueryRow(`SELECT t.id, t.slug, t.title, 0, f.slug, u.nickname, t.created, t.message
+		FROM thread AS t
+		LEFT JOIN fuser AS u ON u.id=t.author_id
+		LEFT JOIN forum AS f ON f.id=t.forum_id
+		WHERE t.id=$1 OR t.ci_slug=LOWER($2)`,
+		threadId,
+		slug,
+	)
+
+	thread, err := ScanThreadFromRow(row)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	_, err = s.db.Exec(`INSERT INTO vote (user_id, thread_id, voice)
+		VALUES ((SELECT id FROM fuser WHERE ci_nickname=LOWER($1)), $2, $3)
+		RETURNING id`,
+		vote.NickName,
+		thread.Id,
+		vote.Voice,
+	)
+
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	row = s.db.QueryRow(`SELECT SUM(coalesce(voice, 0)) AS votes
+	FROM vote 
+	WHERE thread_id=$1`,
+		thread.Id,
+	)
+
+	err = row.Scan(&thread.Votes)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: thread}
 }
