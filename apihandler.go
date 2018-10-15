@@ -42,10 +42,10 @@ func (h *ApiHandler) AddThread(ctx iris.Context) {
 
 func (h *ApiHandler) AddPosts(ctx iris.Context) {
 	slug := ctx.Params().Get("slug_or_id")
-	posts := new([]m.Post)
-	ctx.ReadJSON(posts)
+	posts := []*m.Post{}
+	ctx.ReadJSON(&posts)
 
-	WriteResponse(h.apiService.Posts.AddPosts(slug, *posts), ctx)
+	WriteResponse(h.apiService.Posts.AddPosts(slug, posts), ctx)
 }
 
 func (h *ApiHandler) AddUser(ctx iris.Context) {

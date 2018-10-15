@@ -31,3 +31,11 @@ func ScanThreadFromRow(row IRow) (*m.Thread, error) {
 
 	return t, err
 }
+
+//SELECT id, forum, parent, thread, author, message, created, isEdited
+func ScanPostFromRow(row IRow) (*m.Post, error) {
+	p := new(m.Post)
+	err := row.Scan(&p.Id, &p.Forum, &p.Parent, &p.Thread, &p.Author, &p.Message, &p.Created, &p.Isedited)
+
+	return p, err
+}

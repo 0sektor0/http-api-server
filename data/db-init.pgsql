@@ -52,12 +52,13 @@ CREATE TABLE vote (
 
 CREATE TABLE post (
 	id 			serial PRIMARY KEY,
-	user_id 	integer,
-	parent_id 	integer,
+	user_id 	integer NOT NULL,
 	thread_id 	integer NOT NULL,
+	parent_id 	integer,
 	message 	text,
 	edited 		bool DEFAULT false,
 	is_delited 	bool DEFAULT false,
+	created 	timestamp with time zone,
 	FOREIGN KEY (user_id) REFERENCES fuser(id) ON DELETE SET NULL,
 	FOREIGN KEY (parent_id) REFERENCES post(id) ON DELETE SET NULL,
 	FOREIGN KEY (thread_id) REFERENCES thread(id) ON DELETE CASCADE
