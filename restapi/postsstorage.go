@@ -47,7 +47,7 @@ func (s *PostsStorage) AddPosts(slug string, posts []*m.Post) *ApiResponse { //(
 		)
 		INSERT INTO post (user_id, parent_id, thread_id, message, created)
 		VALUES((SELECT id FROM u), $2, $3, $4, $7)
-		RETURNING id, $5, parent_id, $6, (SELECT nickname from u), message, created, edited `,
+		RETURNING id, $5, coalesce(parent_id, 0), $6, (SELECT nickname from u), message, created, edited `,
 			post.Author,
 			post.Parent,
 			thread.Id,

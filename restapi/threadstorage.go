@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	pq "github.com/lib/pq"
@@ -106,16 +107,215 @@ func (s *ThreadsStorage) GetThreadDetails(slug string) *ApiResponse { //(*m.Thre
 	return &ApiResponse{Code: http.StatusOK, Response: thread}
 }
 
-func (s *ThreadsStorage) GetThreadPosts(slug string, limit int, since int, sort string, desc bool) *ApiResponse { //([]*m.Post, *m.Error) {
-	
-		
-	panic("unemplimented function")
-	return nil
+func ReadPostsArray(rows *sql.Rows) ([]*m.Post, error) {
+	posts := make([]*m.Post, 0)
+	for rows.Next() {
+		post, err := ScanPostFromRow(rows)
+
+		if err != nil {
+			log.Println(err)
+			return posts, err
+		}
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
 }
 
-func (s *ThreadsStorage) UpdateThread(thread *m.Thread) *ApiResponse { //(*m.Thread, *m.Error) {
-	panic("unemplimented function")
-	return nil
+func (s *ThreadsStorage) GetThreadPostsFlat(thread *m.Thread, limit int, since int, desc bool) *ApiResponse {
+	queryBytes := bytes.Buffer{}
+	queryBytes.WriteString(fmt.Sprintf(`WITH p AS (
+		SELECT p.id, p.parent_id, p.thread_id, p.message, p.created, p.edited, p.user_id
+		FROM post AS p
+		WHERE thread_id=$1 AND id>$2
+	)
+	SELECT p.id, '%v', p.parent_id, p.thread_id, u.nickname, p.message, p.created, p.edited
+	FROM p
+	LEFT JOIN fuser AS u ON u.id=p.user_id`, thread.Forum))
+
+	if desc {
+		queryBytes.WriteString(` ORDER BY (p.id, p.created) DESC LIMIT $3`)
+	} else {
+		queryBytes.WriteString(` ORDER BY (p.id, p.created) ASC LIMIT $3`)
+	}
+
+	query := queryBytes.String()
+	log.Println(query)
+	rows, err := s.db.Query(query, thread.Id, since, limit,)
+
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	posts, err := ReadPostsArray(rows)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: posts}
+}
+
+func (s *ThreadsStorage) GetThreadPostsTree(thread *m.Thread, limit int, since int, desc bool) *ApiResponse {
+	var queryParams []interface{}
+	queryParams = append(queryParams, thread.Id)
+
+	queryBytes := bytes.Buffer{}
+	queryBytes.WriteString(fmt.Sprintf(`WITH RECURSIVE tree AS (
+		SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] AS path, id AS root
+		FROM post 
+	   WHERE parent_id IS NULL AND thread_id=$1
+	
+		UNION ALL
+	
+	   SELECT p.id, p.user_id, p.thread_id, p.parent_id, p.message, p.edited, p.created, t.path || p.parent_id, t.id
+		 FROM post AS p, tree AS t
+		 WHERE p.parent_id = t.id
+   ) 
+   SELECT t.id, '%v', coalesce(t.parent_id, 0), t.thread_id, u.nickname, t.message, t.created, t.edited
+   FROM tree AS t
+   LEFT JOIN fuser AS u ON u.id=user_id
+   WHERE t.thread_id=$1`, thread.Forum))
+
+	if since != -1 {
+		if desc {
+			queryBytes.WriteString(` AND t.path <= (SELECT path FROM post WHERE id=$`)
+			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id DESC`)
+		} else {
+			queryBytes.WriteString(` AND t.path >= (SELECT path FROM post WHERE id=$`)
+			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id ASC`)
+		}
+		queryParams = append(queryParams, since)
+	} else {
+		if desc {
+			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id DESC`)
+		} else {
+			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id ASC`)
+		}
+	}
+
+	if limit != -1 {
+		queryBytes.WriteString(` LIMIT $`)
+		queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+		queryParams = append(queryParams, limit)
+	}
+
+	query := queryBytes.String()
+	log.Println(thread, limit, since, desc, query)
+
+	rows, err := s.db.Query(queryBytes.String(), queryParams...)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	posts, err := ReadPostsArray(rows)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: posts}
+}
+
+func (s *ThreadsStorage) GetThreadPostsParentTree(thread *m.Thread, limit int, since int, desc bool) *ApiResponse {
+	var queryParams []interface{}
+	queryParams = append(queryParams, thread.Id)
+
+	queryBytes := bytes.Buffer{}
+	queryBytes.WriteString(fmt.Sprintf(`WITH RECURSIVE tree AS (
+		SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] AS path, id AS root
+		FROM post 
+	   WHERE parent_id IS NULL AND thread_id=$1
+	
+		UNION ALL
+	
+	   SELECT p.id, p.user_id, p.thread_id, p.parent_id, p.message, p.edited, p.created, t.path || p.parent_id, t.id
+		 FROM post AS p, tree AS t
+		 WHERE p.parent_id = t.id
+   ) 
+   SELECT t.id, '%v', coalesce(t.parent_id, 0), t.thread_id, u.nickname, t.message, t.created, t.edited
+   FROM tree AS t
+   LEFT JOIN fuser AS u ON u.id=user_id
+   WHERE t.thread_id=$1`, thread.Forum))
+
+	if since != -1 {
+		if desc {
+			queryBytes.WriteString(` AND t.path <= (SELECT path FROM post WHERE id=$`)
+			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id DESC`)
+		} else {
+			queryBytes.WriteString(` AND t.path >= (SELECT path FROM post WHERE id=$`)
+			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id ASC`)
+		}
+		queryParams = append(queryParams, since)
+	} else {
+		if desc {
+			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id DESC`)
+		} else {
+			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id ASC`)
+		}
+	}
+
+	if limit != -1 {
+		queryBytes.WriteString(` LIMIT $`)
+		queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+		queryParams = append(queryParams, limit)
+	}
+
+	query := queryBytes.String()
+	log.Println(thread, limit, since, desc, query)
+
+	rows, err := s.db.Query(queryBytes.String(), queryParams...)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	posts, err := ReadPostsArray(rows)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: posts}
+}
+
+func (s *ThreadsStorage) GetThreadPosts(slug string, limit int, since int, sort string, desc bool) *ApiResponse { //([]*m.Post, *m.Error) {
+	threadId, err := strconv.Atoi(slug)
+	if err != nil {
+		threadId = 0
+	}
+
+	row := s.db.QueryRow(`SELECT t.id, t.slug, t.title, 0, f.slug, '', t.created, t.message
+		FROM thread AS t
+		LEFT JOIN forum AS f ON f.id=t.forum_id
+		WHERE t.ci_slug=LOWER($1) OR t.id=$2`,
+		slug,
+		threadId,
+	)
+
+	thread, err := ScanThreadFromRow(row)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	switch sort {
+	case "flat":
+		return s.GetThreadPostsFlat(thread, limit, since, desc)
+	case "tree":
+		return s.GetThreadPostsTree(thread, limit, since, desc)
+	case "parent_tree":
+		return s.GetThreadPostsParentTree(thread, limit, since, desc)
+	}
+
+	return &ApiResponse{Code: http.StatusBadRequest, Response: nil}
 }
 
 func (s *ThreadsStorage) VoteForThread(slug string, vote *m.Vote) *ApiResponse { //(*m.Thread, *m.Error) {
@@ -188,4 +388,9 @@ func (s *ThreadsStorage) VoteForThread(slug string, vote *m.Vote) *ApiResponse {
 	}
 
 	return &ApiResponse{Code: http.StatusOK, Response: thread}
+}
+
+func (s *ThreadsStorage) UpdateThread(thread *m.Thread) *ApiResponse { //(*m.Thread, *m.Error) {
+	panic("unemplimented function")
+	return nil
 }
