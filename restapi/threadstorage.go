@@ -78,11 +78,37 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 }
 
 func (s *ThreadsStorage) GetThreadDetails(slug string) *ApiResponse { //(*m.Thread, *m.Error) {
-	panic("unemplimented function")
-	return nil
+	threadId, err := strconv.Atoi(slug)
+	if err != nil {
+		threadId = 0
+	}
+
+	row := s.db.QueryRow(`WITH t AS (
+		SELECT t.id, t.slug, t.title, f.slug AS forum_slug, u.nickname, t.created, t.message
+		FROM thread AS t
+		LEFT JOIN forum AS f ON f.id=t.forum_id
+		LEFT JOIN fuser AS u ON u.id=t.author_id
+		WHERE t.ci_slug=LOWER($1) OR t.id=$2
+	)
+	SELECT t.id, t.slug, t.title, SUM(coalesce(v.voice, 0)), t.forum_slug, t.nickname, t.created, t.message
+	FROM t
+	LEFT JOIN vote AS v ON t.id=v.thread_id
+	GROUP BY t.id, t.title, t.slug, t.nickname, t.created, t.message, t.forum_slug`,
+		slug,
+		threadId,
+	)
+
+	thread, err := ScanThreadFromRow(row)
+	if err != nil {
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: thread}
 }
 
 func (s *ThreadsStorage) GetThreadPosts(slug string, limit int, since int, sort string, desc bool) *ApiResponse { //([]*m.Post, *m.Error) {
+	
+		
 	panic("unemplimented function")
 	return nil
 }
@@ -113,17 +139,40 @@ func (s *ThreadsStorage) VoteForThread(slug string, vote *m.Vote) *ApiResponse {
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
 
-	_, err = s.db.Exec(`INSERT INTO vote (user_id, thread_id, voice)
-		VALUES ((SELECT id FROM fuser WHERE ci_nickname=LOWER($1)), $2, $3)
-		RETURNING id`,
+	row = s.db.QueryRow(`SELECT id, about, email, fullname, nickname 
+	FROM fuser 
+	WHERE ci_nickname=LOWER($1)`,
 		vote.NickName,
-		thread.Id,
-		vote.Voice,
 	)
 
+	user, err := ScanUserFromRow(row)
 	if err != nil {
 		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	res, err := s.db.Exec(`UPDATE vote 
+	SET voice=$1
+	WHERE thread_id=$2 AND user_id=$3`,
+		vote.Voice,
+		thread.Id,
+		user.Id,
+	)
+
+	rowsAffcted, err := res.RowsAffected()
+	if rowsAffcted == 0 || err != nil {
+		_, err = s.db.Exec(`INSERT INTO vote (user_id, thread_id, voice)
+		VALUES ((SELECT id FROM fuser WHERE ci_nickname=LOWER($1)), $2, $3)
+		RETURNING id`,
+			vote.NickName,
+			thread.Id,
+			vote.Voice,
+		)
+
+		if err != nil {
+			log.Println(err)
+			return &ApiResponse{Code: http.StatusNotFound, Response: err}
+		}
 	}
 
 	row = s.db.QueryRow(`SELECT SUM(coalesce(voice, 0)) AS votes

@@ -74,11 +74,7 @@ func (h *ApiHandler) GetUserDetails(ctx iris.Context) {
 
 func (h *ApiHandler) GetThreadDetails(ctx iris.Context) {
 	slug := ctx.Params().Get("slug_or_id")
-	limit, _ := ctx.URLParamInt("limit")
-	since := ctx.URLParam("since")
-	desc, _ := ctx.URLParamBool("desc")
-
-	WriteResponse(h.apiService.Forums.GetForumThreads(slug, limit, since, desc), ctx)
+	WriteResponse(h.apiService.Threads.GetThreadDetails(slug), ctx)
 }
 
 func (h *ApiHandler) GetPostDetails(ctx iris.Context) {

@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"time"
 	"log"
 	"database/sql"
 	"net/http"
@@ -36,6 +37,8 @@ func (s *PostsStorage) AddPosts(slug string, posts []*m.Post) *ApiResponse { //(
 	}
 
 	newPosts := make([]*m.Post, 0)
+	timeNow := time.Now().Format(time.RFC3339)
+
 	for _, post := range posts {
 		row = s.db.QueryRow(`WITH u AS (
 			SELECT id, nickname
@@ -43,7 +46,7 @@ func (s *PostsStorage) AddPosts(slug string, posts []*m.Post) *ApiResponse { //(
 			WHERE ci_nickname=LOWER($1)
 		)
 		INSERT INTO post (user_id, parent_id, thread_id, message, created)
-		VALUES((SELECT id FROM u), $2, $3, $4, NOW())
+		VALUES((SELECT id FROM u), $2, $3, $4, $7)
 		RETURNING id, $5, parent_id, $6, (SELECT nickname from u), message, created, edited `,
 			post.Author,
 			post.Parent,
@@ -51,6 +54,7 @@ func (s *PostsStorage) AddPosts(slug string, posts []*m.Post) *ApiResponse { //(
 			post.Message,
 			thread.Forum,
 			thread.Id,
+			timeNow,
 		)
 
 		post, err := ScanPostFromRow(row)

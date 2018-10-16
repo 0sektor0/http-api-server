@@ -45,6 +45,7 @@ CREATE TABLE vote (
 	thread_id 	integer NOT NULL,
 	voice 		integer default 1,
 	is_delited 	bool DEFAULT false,
+	UNIQUE (user_id, thread_id),
 	FOREIGN KEY (user_id) REFERENCES fuser(id) ON DELETE CASCADE,
 	FOREIGN KEY (thread_id) REFERENCES thread(id) ON DELETE CASCADE
 );
