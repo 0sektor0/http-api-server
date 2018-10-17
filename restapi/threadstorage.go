@@ -124,25 +124,49 @@ func ReadPostsArray(rows *sql.Rows) ([]*m.Post, error) {
 }
 
 func (s *ThreadsStorage) GetThreadPostsFlat(thread *m.Thread, limit int, since int, desc bool) *ApiResponse {
+	var queryParams []interface{}
+	queryParams = append(queryParams, thread.Id)
+
 	queryBytes := bytes.Buffer{}
-	queryBytes.WriteString(fmt.Sprintf(`WITH p AS (
-		SELECT p.id, p.parent_id, p.thread_id, p.message, p.created, p.edited, p.user_id
-		FROM post AS p
-		WHERE thread_id=$1 AND id>$2
-	)
+	if since != -1 {
+		whereFilter := ">"
+		if desc {
+			whereFilter = "<"
+		}
+
+		queryBytes.WriteString(fmt.Sprintf(`WITH p AS (
+			SELECT p.id, p.parent_id, p.thread_id, p.message, p.created, p.edited, p.user_id
+			FROM post AS p
+			WHERE thread_id=$1 AND id%v$`, whereFilter))
+		queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+		queryParams = append(queryParams, since)
+	} else {
+		queryBytes.WriteString(`WITH p AS (
+			SELECT p.id, p.parent_id, p.thread_id, p.message, p.created, p.edited, p.user_id
+			FROM post AS p
+			WHERE thread_id=$1`)
+	}
+
+	queryBytes.WriteString(fmt.Sprintf(`)
 	SELECT p.id, '%v', p.parent_id, p.thread_id, u.nickname, p.message, p.created, p.edited
 	FROM p
 	LEFT JOIN fuser AS u ON u.id=p.user_id`, thread.Forum))
 
 	if desc {
-		queryBytes.WriteString(` ORDER BY (p.id, p.created) DESC LIMIT $3`)
+		queryBytes.WriteString(` ORDER BY (p.id, p.created) DESC`)
 	} else {
-		queryBytes.WriteString(` ORDER BY (p.id, p.created) ASC LIMIT $3`)
+		queryBytes.WriteString(` ORDER BY (p.id, p.created) ASC`)
+	}
+
+	if limit != -1 {
+		queryBytes.WriteString(` LIMIT $`)
+		queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
+		queryParams = append(queryParams, limit)
 	}
 
 	query := queryBytes.String()
 	log.Println(query)
-	rows, err := s.db.Query(query, thread.Id, since, limit)
+	rows, err := s.db.Query(query, queryParams...)
 
 	if err != nil {
 		log.Println(err)
