@@ -142,7 +142,7 @@ func (s *ThreadsStorage) GetThreadPostsFlat(thread *m.Thread, limit int, since i
 
 	query := queryBytes.String()
 	log.Println(query)
-	rows, err := s.db.Query(query, thread.Id, since, limit,)
+	rows, err := s.db.Query(query, thread.Id, since, limit)
 
 	if err != nil {
 		log.Println(err)
@@ -183,18 +183,18 @@ func (s *ThreadsStorage) GetThreadPostsTree(thread *m.Thread, limit int, since i
 		if desc {
 			queryBytes.WriteString(` AND t.path <= (SELECT path FROM post WHERE id=$`)
 			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id DESC`)
+			queryBytes.WriteString(`) ORDER BY (t.root, t.path, t.created, t.id) DESC`)
 		} else {
 			queryBytes.WriteString(` AND t.path >= (SELECT path FROM post WHERE id=$`)
 			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id ASC`)
+			queryBytes.WriteString(`) ORDER BY (t.root, t.path, t.created, t.id) ASC`)
 		}
 		queryParams = append(queryParams, since)
 	} else {
 		if desc {
-			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id DESC`)
+			queryBytes.WriteString(` ORDER BY (t.root, t.path, t.created, t.id) DESC`)
 		} else {
-			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id ASC`)
+			queryBytes.WriteString(` ORDER BY (t.root, t.path, t.created, t.id) ASC`)
 		}
 	}
 
@@ -225,15 +225,24 @@ func (s *ThreadsStorage) GetThreadPostsTree(thread *m.Thread, limit int, since i
 func (s *ThreadsStorage) GetThreadPostsParentTree(thread *m.Thread, limit int, since int, desc bool) *ApiResponse {
 	var queryParams []interface{}
 	queryParams = append(queryParams, thread.Id)
-
 	queryBytes := bytes.Buffer{}
-	queryBytes.WriteString(fmt.Sprintf(`WITH RECURSIVE tree AS (
-		SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] AS path, id AS root
-		FROM post 
-	   WHERE parent_id IS NULL AND thread_id=$1
-	
-		UNION ALL
-	
+
+	if limit == -1 {
+		queryBytes.WriteString(`WITH RECURSIVE tree AS (
+			SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] AS path, id AS root
+			FROM post 
+		   WHERE parent_id IS NULL AND thread_id=$1`)
+	} else {
+		queryBytes.WriteString(`WITH RECURSIVE tree AS (
+			(SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] AS path, id AS root
+			FROM post 
+		   WHERE parent_id IS NULL AND thread_id=$1
+		   ORDER BY id
+		   LIMIT $2)`)
+		queryParams = append(queryParams, limit)
+	}
+
+	queryBytes.WriteString(fmt.Sprintf(` UNION ALL
 	   SELECT p.id, p.user_id, p.thread_id, p.parent_id, p.message, p.edited, p.created, t.path || p.parent_id, t.id
 		 FROM post AS p, tree AS t
 		 WHERE p.parent_id = t.id
@@ -247,25 +256,19 @@ func (s *ThreadsStorage) GetThreadPostsParentTree(thread *m.Thread, limit int, s
 		if desc {
 			queryBytes.WriteString(` AND t.path <= (SELECT path FROM post WHERE id=$`)
 			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id DESC`)
+			queryBytes.WriteString(`) ORDER BY t.root DESC, (t.path, t.created, t.id) ASC`)
 		} else {
 			queryBytes.WriteString(` AND t.path >= (SELECT path FROM post WHERE id=$`)
 			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-			queryBytes.WriteString(`) ORDER BY t.root, t.path, t.created, t.id ASC`)
+			queryBytes.WriteString(`) ORDER BY (t.root, t.path, t.created, t.id) ASC`)
 		}
 		queryParams = append(queryParams, since)
 	} else {
 		if desc {
-			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id DESC`)
+			queryBytes.WriteString(` ORDER BY t.root DESC, (t.path, t.created, t.id) ASC`)
 		} else {
-			queryBytes.WriteString(` ORDER BY t.root, t.path, t.created, t.id ASC`)
+			queryBytes.WriteString(` ORDER BY (t.root, t.path, t.created, t.id) ASC`)
 		}
-	}
-
-	if limit != -1 {
-		queryBytes.WriteString(` LIMIT $`)
-		queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-		queryParams = append(queryParams, limit)
 	}
 
 	query := queryBytes.String()
@@ -307,12 +310,12 @@ func (s *ThreadsStorage) GetThreadPosts(slug string, limit int, since int, sort 
 	}
 
 	switch sort {
-	case "flat":
-		return s.GetThreadPostsFlat(thread, limit, since, desc)
 	case "tree":
 		return s.GetThreadPostsTree(thread, limit, since, desc)
 	case "parent_tree":
 		return s.GetThreadPostsParentTree(thread, limit, since, desc)
+	default:
+		return s.GetThreadPostsFlat(thread, limit, since, desc)
 	}
 
 	return &ApiResponse{Code: http.StatusBadRequest, Response: nil}
