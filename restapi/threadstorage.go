@@ -164,37 +164,36 @@ func (s *ThreadsStorage) GetThreadPostsTree(thread *m.Thread, limit int, since i
 
 	queryBytes := bytes.Buffer{}
 	queryBytes.WriteString(fmt.Sprintf(`WITH RECURSIVE tree AS (
-		SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] AS path, id AS root
+		SELECT id, user_id, thread_id, parent_id, message, edited, created, ARRAY[]::INTEGER[] || id AS path, id AS root
 		FROM post 
-	   WHERE parent_id IS NULL AND thread_id=$1
+		WHERE parent_id IS NULL AND thread_id=$1
 	
 		UNION ALL
 	
-	   SELECT p.id, p.user_id, p.thread_id, p.parent_id, p.message, p.edited, p.created, t.path || p.parent_id, t.id
-		 FROM post AS p, tree AS t
-		 WHERE p.parent_id = t.id
-   ) 
+		SELECT p.id, p.user_id, p.thread_id, p.parent_id, p.message, p.edited, p.created, t.path || p.id, t.id
+		FROM post AS p, tree AS t
+		WHERE p.parent_id = t.id
+   	) 
    SELECT t.id, '%v', coalesce(t.parent_id, 0), t.thread_id, u.nickname, t.message, t.created, t.edited
    FROM tree AS t
-   LEFT JOIN fuser AS u ON u.id=user_id
-   WHERE t.thread_id=$1`, thread.Forum))
+   LEFT JOIN fuser AS u ON u.id=user_id`, thread.Forum))
 
 	if since != -1 {
 		if desc {
-			queryBytes.WriteString(` AND t.path <= (SELECT path FROM post WHERE id=$`)
+			queryBytes.WriteString(` WHERE t.path < (SELECT path FROM tree WHERE id=$`)
 			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-			queryBytes.WriteString(`) ORDER BY (t.root, t.path, t.created, t.id) DESC`)
+			queryBytes.WriteString(`) ORDER BY t.path DESC`)
 		} else {
-			queryBytes.WriteString(` AND t.path >= (SELECT path FROM post WHERE id=$`)
+			queryBytes.WriteString(` WHERE t.path > (SELECT path FROM tree WHERE id=$`)
 			queryBytes.WriteString(strconv.Itoa(len(queryParams) + 1))
-			queryBytes.WriteString(`) ORDER BY (t.root, t.path, t.created, t.id) ASC`)
+			queryBytes.WriteString(`) ORDER BY t.path ASC`)
 		}
 		queryParams = append(queryParams, since)
 	} else {
 		if desc {
-			queryBytes.WriteString(` ORDER BY (t.root, t.path, t.created, t.id) DESC`)
+			queryBytes.WriteString(` ORDER BY t.path DESC`)
 		} else {
-			queryBytes.WriteString(` ORDER BY (t.root, t.path, t.created, t.id) ASC`)
+			queryBytes.WriteString(` ORDER BY t.path ASC`)
 		}
 	}
 
