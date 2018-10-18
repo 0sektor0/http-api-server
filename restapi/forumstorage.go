@@ -56,16 +56,25 @@ func (s *ForumsStorage) AddForum(forum *m.Forum) *ApiResponse { //(*m.Forum, *m.
 }
 
 func (s *ForumsStorage) GetForumDetails(slug string) *ApiResponse { //(*m.Forum, *m.Error) {
-	row := s.db.QueryRow(`SELECT f.id, SUM(coalesce(p.id,0)) AS posts, f.slug, COUNT(DISTINCT t.id) AS threads, f.title, u.nickname
-	FROM (
-		SELECT * 
+	row := s.db.QueryRow(`WITH f AS (
+		SELECT id, admin_id, slug, title
 		FROM forum
 		WHERE ci_slug=LOWER($1)
-	) AS f
-	LEFT JOIN thread AS t ON t.forum_id=f.id
-	LEFT JOIN post AS p ON p.thread_id=t.id
-	LEFT JOIN fuser AS u ON u.id=f.admin_id
-	GROUP BY f.id, f.admin_id, f.slug, f.title, u.nickname`,
+	),
+	t AS (
+		SELECT id
+		FROM thread
+		WHERE forum_id=(SELECT id FROM f)
+	),
+	p AS (
+		SELECT COUNT(p.id) AS posts
+		FROM post AS p
+		JOIN t ON t.id=p.thread_id
+	)
+	
+	SELECT f.id, (SELECT posts FROM p), slug, (SELECT COUNT(t.id) FROM t), title, u.nickname 
+	FROM f 
+	JOIN fuser AS u ON u.id=f.admin_id `,
 		slug)
 
 	forum, err := ScanForumFromRow(row)
@@ -120,7 +129,7 @@ func (s *ForumsStorage) GetForumThreads(slug string, limit int, since string, de
 	GROUP BY t.id, t.title, t.slug, f.slug, u.nickname, t.created, t.message
 	ORDER BY t.created %v
 	LIMIT $3`, border, order)
-	
+
 	log.Println(forumId)
 	log.Println(sql)
 

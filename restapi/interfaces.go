@@ -29,7 +29,7 @@ type IThreadsStorage interface {
 
 	GetThreadPosts(slug string, limit int, since int, sort string, desc bool) *ApiResponse
 
-	UpdateThread(thread *m.Thread) *ApiResponse
+	UpdateThread(slug string, thread *m.Thread) *ApiResponse
 
 	VoteForThread(slug string, vote *m.Vote) *ApiResponse
 }

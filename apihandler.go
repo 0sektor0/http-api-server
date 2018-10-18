@@ -120,9 +120,9 @@ func (h *ApiHandler) UpdatePost(ctx iris.Context) {
 func (h *ApiHandler) UpdateThread(ctx iris.Context) {
 	thread := new(m.Thread)
 	ctx.ReadJSON(thread)
-	thread.Forum = ctx.Params().Get("slug")
+	slug := ctx.Params().Get("slug_or_id")
 
-	WriteResponse(h.apiService.Threads.UpdateThread(thread), ctx)
+	WriteResponse(h.apiService.Threads.UpdateThread(slug, thread), ctx)
 }
 
 func (h *ApiHandler) VipeServiceStatus(ctx iris.Context) {

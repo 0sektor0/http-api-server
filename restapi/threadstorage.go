@@ -475,7 +475,72 @@ func (s *ThreadsStorage) VoteForThread(slug string, vote *m.Vote) *ApiResponse {
 	return &ApiResponse{Code: http.StatusOK, Response: thread}
 }
 
-func (s *ThreadsStorage) UpdateThread(thread *m.Thread) *ApiResponse { //(*m.Thread, *m.Error) {
-	panic("unemplimented function")
-	return nil
+func (s *ThreadsStorage) UpdateThread(slug string, thread *m.Thread) *ApiResponse { //(*m.Thread, *m.Error) {
+	queryBytes := bytes.Buffer{}
+	var queryParams []interface{}
+
+	if thread.Slug != nil {
+		queryBytes.WriteString(`UPDATE thread SET slug=$1, ci_slug=LOWER($1)`)
+		queryParams = append(queryParams, thread.Slug)
+	} else {
+		queryBytes.WriteString(`UPDATE thread SET id=id`)
+	}
+
+	if thread.Author != "" {
+		queryBytes.WriteString(`, author_id=(SELECT id FROM fuser WHERE ci_nickname=LOWER($`)
+		queryBytes.WriteString(fmt.Sprintf(`%v)`, len(queryParams)+1))
+		queryParams = append(queryParams, thread.Author)
+	}
+
+	if thread.Forum != "" {
+		queryBytes.WriteString(`, forum_id=(SELECT id FROM forum WHERE ci_slug=LOWER($`)
+		queryBytes.WriteString(fmt.Sprintf(`%v)`, len(queryParams)+1))
+		queryParams = append(queryParams, thread.Forum)
+	}
+
+	if thread.Created != "" {
+		queryBytes.WriteString(`, created=$`)
+		queryBytes.WriteString(fmt.Sprintf(`%v`, len(queryParams)+1))
+		queryParams = append(queryParams, thread.Created)
+	}
+
+	if thread.Title != "" {
+		queryBytes.WriteString(`, title=$`)
+		queryBytes.WriteString(fmt.Sprintf(`%v`, len(queryParams)+1))
+		queryParams = append(queryParams, thread.Title)
+	}
+
+	if thread.Message != "" {
+		queryBytes.WriteString(`, message=$`)
+		queryBytes.WriteString(fmt.Sprintf(`%v`, len(queryParams)+1))
+		queryParams = append(queryParams, thread.Message)
+	}
+
+	if thread.Created != "" {
+		queryBytes.WriteString(`, message=$`)
+		queryBytes.WriteString(fmt.Sprintf(`%v`, len(queryParams)+1))
+		queryParams = append(queryParams, thread.Message)
+	}
+
+	threadId, err := strconv.Atoi(slug)
+	if err != nil {
+		queryBytes.WriteString(` WHERE ci_slug=LOWER($`)
+		queryBytes.WriteString(fmt.Sprintf(`%v)`, len(queryParams)+1))
+		queryParams = append(queryParams, slug)
+	} else {
+		queryBytes.WriteString(` WHERE id=$`)
+		queryBytes.WriteString(fmt.Sprintf(`%v`, len(queryParams)+1))
+		queryParams = append(queryParams, threadId)
+	}
+
+	query := queryBytes.String()
+	log.Println(query)
+
+	_, err = s.db.Exec(query, queryParams...)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	return s.GetThreadDetails(slug)
 }
