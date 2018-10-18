@@ -9,17 +9,15 @@ type IUsersStorage interface {
 
 	GetUserDetails(nickname string) *ApiResponse
 
-	UpdateUser(update *m.User) *ApiResponse
+	UpdateUser(nickname string, update *m.User) *ApiResponse
+
+	GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse
 }
 
 type IForumsStorage interface {
 	AddForum(forum *m.Forum) *ApiResponse
 
 	GetForumDetails(slug string) *ApiResponse
-
-	GetForumUsers(slug string, limit int, since string, desc bool) *ApiResponse
-
-	GetForumThreads(slug string, limit int, since string, desc bool) *ApiResponse
 }
 
 type IThreadsStorage interface {
@@ -32,6 +30,8 @@ type IThreadsStorage interface {
 	UpdateThread(slug string, thread *m.Thread) *ApiResponse
 
 	VoteForThread(slug string, vote *m.Vote) *ApiResponse
+	
+	GetThreadByForum(slug string, limit int, since string, desc bool) *ApiResponse
 }
 
 type IPostsStorage interface {

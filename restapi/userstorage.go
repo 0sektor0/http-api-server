@@ -1,7 +1,9 @@
 package restapi
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -59,57 +61,91 @@ func (s *UsersStorage) AddUser(user *m.User) *ApiResponse { //(*m.User, []*m.Use
 	return &ApiResponse{Code: http.StatusConflict, Response: existingUsers}
 }
 
-//очень плохой код
-func (s *UsersStorage) UpdateUser(update *m.User) *ApiResponse { //(*m.User, *m.Error) {
-	row := s.db.QueryRow(`
-	SELECT id, about, email, fullname, nickname 
-	FROM fuser 
-	WHERE ci_nickname=LOWER($1)`,
-		update.Nickname)
-
-	oldUser, err := ScanUserFromRow(row)
-	if err != nil {
-		log.Println(err)
-		return &ApiResponse{Code: http.StatusNotFound, Response: err}
-	}
-
-	if update.About == "" {
-		update.About = oldUser.About
-	}
-	if update.Email == "" {
-		update.Email = oldUser.Email
-	}
-	if update.Fullname == "" {
-		update.Fullname = oldUser.Fullname
-	}
-
-	_, err = s.db.Exec(`UPDATE fuser
-	SET about=$1, email=$2, ci_email=LOWER($2), fullname=$3
-	WHERE ci_nickname=LOWER($4)`,
-		update.About,
-		update.Email,
-		update.Fullname,
-		update.Nickname)
-
-	if err != nil {
-		log.Println(err)
-		return &ApiResponse{Code: http.StatusConflict, Response: err}
-	}
-
-	return &ApiResponse{Code: http.StatusOK, Response: update}
-}
-
-func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User, *m.Error) {
+func (s *UsersStorage) GetUserByNickname(nickname string) (*m.User, error) {
 	row := s.db.QueryRow(`SELECT id, about, email, fullname, nickname 
 	FROM fuser 
 	WHERE ci_nickname=LOWER($1)`,
 		nickname)
 
-	user, err := ScanUserFromRow(row)
+	return ScanUserFromRow(row)
+}
+
+func (s *UsersStorage) GetUserByEmail(email string) (*m.User, error) {
+	row := s.db.QueryRow(`SELECT id, about, email, fullname, nickname 
+	FROM fuser 
+	WHERE ci_email=LOWER($1)`,
+		email)
+
+	return ScanUserFromRow(row)
+}
+
+func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse { //(*m.User, *m.Error) {
+	user, err := s.GetUserByNickname(nickname)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+	
+	queryBytes := bytes.Buffer{}
+	var queryParams []interface{}
+
+	queryBytes.WriteString(`UPDATE fuser SET id=id`)
+
+	if update.Nickname != "" {
+		user.Nickname = nickname
+		len := len(queryParams) + 1
+
+		queryBytes.WriteString(fmt.Sprintf(`, nickname=$%v, ci_nickname=LOWER($%v)`, len, len))
+		queryParams = append(queryParams, update.Nickname)
+	}
+
+	if update.Fullname != "" {
+		user.Fullname = update.Fullname
+		queryBytes.WriteString(fmt.Sprintf(`, fullname=$%v`, len(queryParams)+1))
+		queryParams = append(queryParams, update.Fullname)
+	}
+
+	if update.Email != "" {
+		user.Email = update.Email
+		len := len(queryParams) + 1
+
+		queryBytes.WriteString(fmt.Sprintf(`, email=$%v, ci_email=LOWER($%v)`, len, len))
+		queryParams = append(queryParams, update.Email)
+	}
+
+	if update.About != "" {
+		user.About = update.About
+		queryBytes.WriteString(fmt.Sprintf(`, about=$%v`, len(queryParams)+1))
+		queryParams = append(queryParams, update.About)
+	}
+
+	queryParams = append(queryParams, nickname)
+	queryBytes.WriteString(fmt.Sprintf(` WHERE ci_nickname=LOWER($%v)`, len(queryParams)))
+
+	query := queryBytes.String()
+	log.Println(query)
+
+	_, err = s.db.Exec(query, queryParams...)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusConflict, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: user}
+}
+
+func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User, *m.Error) {
+	user, err := s.GetUserByNickname(nickname)
+
 	if err != nil {
 		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
 
 	return &ApiResponse{Code: http.StatusOK, Response: user}
+}
+
+func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse { //([]*m.User, *m.Error) {
+	panic("unemplimented function")
+	return nil
 }

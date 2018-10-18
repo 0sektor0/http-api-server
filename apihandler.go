@@ -88,7 +88,7 @@ func (h *ApiHandler) GetForumUsers(ctx iris.Context) {
 	since := ctx.URLParam("since")
 	desc, _ := ctx.URLParamBool("desc")
 
-	WriteResponse(h.apiService.Forums.GetForumUsers(slug, limit, since, desc), ctx)
+	WriteResponse(h.apiService.Users.GetUsersByForum(slug, limit, since, desc), ctx)
 }
 
 func (h *ApiHandler) GetForumThreads(ctx iris.Context) {
@@ -97,7 +97,7 @@ func (h *ApiHandler) GetForumThreads(ctx iris.Context) {
 	since := ctx.URLParam("since")
 	desc, _ := ctx.URLParamBool("desc")
 
-	WriteResponse(h.apiService.Forums.GetForumThreads(slug, limit, since, desc), ctx)
+	WriteResponse(h.apiService.Threads.GetThreadByForum(slug, limit, since, desc), ctx)
 }
 
 func (h *ApiHandler) GetThreadPosts(ctx iris.Context) {
@@ -140,9 +140,7 @@ func (h *ApiHandler) VoteForThread(ctx iris.Context) {
 func (h *ApiHandler) UpdateUser(ctx iris.Context) {
 	nickname := ctx.Params().Get("nickname")
 	userUpdate := new(m.User)
-
 	ctx.ReadJSON(userUpdate)
-	userUpdate.Nickname = nickname
 
-	WriteResponse(h.apiService.Users.UpdateUser(userUpdate), ctx)
+	WriteResponse(h.apiService.Users.UpdateUser(nickname, userUpdate), ctx)
 }
