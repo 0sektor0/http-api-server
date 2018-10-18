@@ -85,7 +85,7 @@ func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse 
 		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}
-	
+
 	queryBytes := bytes.Buffer{}
 	var queryParams []interface{}
 
@@ -145,7 +145,80 @@ func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User
 	return &ApiResponse{Code: http.StatusOK, Response: user}
 }
 
-func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse { //([]*m.User, *m.Error) {
-	panic("unemplimented function")
-	return nil
+func ReadUsersArray(rows *sql.Rows) ([]*m.User, error) {
+	users := make([]*m.User, 0)
+
+	for rows.Next() {
+		user, err := ScanUserFromRow(rows)
+
+		if err != nil {
+			log.Println(err)
+			return users, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse { //([]*m.User, *m.Error) {	
+	queryBytes := bytes.Buffer{}
+	var queryParams []interface{}
+
+	queryBytes.WriteString(`WITH f AS (
+		SELECT id, admin_id, slug, title
+		FROM forum
+		WHERE ci_slug=LOWER($1)
+	),
+	t AS (
+		SELECT id, author_id
+		FROM thread
+		WHERE forum_id=(SELECT id FROM f)
+	),
+	fu AS (
+		SELECT p.user_id AS id
+		FROM post AS p
+		JOIN t ON t.id=p.thread_id
+		UNION (SELECT author_id AS id FROM t)
+	)
+	SELECT id, about, email, fullname, nickname 
+	FROM  fuser
+	JOIN fu USING(id)`)
+	queryParams = append(queryParams, slug)
+
+	if desc {
+		if since != "" {
+			queryBytes.WriteString(fmt.Sprintf(` WHERE convert_to(ci_nickname,'SQL_ASCII')<convert_to(LOWER($%v),'SQL_ASCII')`, len(queryParams)+1))
+			queryParams = append(queryParams, since)
+		}
+
+		queryBytes.WriteString(fmt.Sprintf(` ORDER BY convert_to(ci_nickname,'SQL_ASCII') DESC LIMIT $%v`, len(queryParams)+1))
+		queryParams = append(queryParams, limit)
+	} else {
+		if since != "" {
+			queryBytes.WriteString(` WHERE convert_to(ci_nickname,'SQL_ASCII')>convert_to(LOWER($2),'SQL_ASCII')`)
+			queryParams = append(queryParams, since)
+		}
+
+		queryBytes.WriteString(fmt.Sprintf(` ORDER BY convert_to(ci_nickname,'SQL_ASCII') ASC LIMIT $%v`, len(queryParams)+1))
+		queryParams = append(queryParams, limit)
+	}
+
+	query := queryBytes.String()
+	log.Println(query)
+
+	rows, err := s.db.Query(query, queryParams...)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	users, err := ReadUsersArray(rows)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: users}
 }

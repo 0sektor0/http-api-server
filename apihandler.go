@@ -88,6 +88,10 @@ func (h *ApiHandler) GetForumUsers(ctx iris.Context) {
 	since := ctx.URLParam("since")
 	desc, _ := ctx.URLParamBool("desc")
 
+	if limit <0 {
+		limit = 0
+	}
+
 	WriteResponse(h.apiService.Users.GetUsersByForum(slug, limit, since, desc), ctx)
 }
 
@@ -96,6 +100,10 @@ func (h *ApiHandler) GetForumThreads(ctx iris.Context) {
 	limit, _ := ctx.URLParamInt("limit")
 	since := ctx.URLParam("since")
 	desc, _ := ctx.URLParamBool("desc")
+
+	if limit <0 {
+		limit = 0
+	}
 
 	WriteResponse(h.apiService.Threads.GetThreadByForum(slug, limit, since, desc), ctx)
 }
@@ -107,6 +115,10 @@ func (h *ApiHandler) GetThreadPosts(ctx iris.Context) {
 	sort := ctx.URLParam("sort")
 	desc, _ := ctx.URLParamBool("desc")
 
+	if limit <0 {
+		limit = 0
+	}
+	
 	WriteResponse(h.apiService.Threads.GetThreadPosts(slug, limit, since, sort, desc), ctx)
 }
 
