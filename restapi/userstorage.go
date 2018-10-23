@@ -61,8 +61,8 @@ func (s *UsersStorage) AddUser(user *m.User) *ApiResponse { //(*m.User, []*m.Use
 	return &ApiResponse{Code: http.StatusConflict, Response: existingUsers}
 }
 
-func (s *UsersStorage) GetUserByNickname(nickname string) (*m.User, error) {
-	row := s.db.QueryRow(`SELECT id, about, email, fullname, nickname 
+func GetUserByNickname(db *sql.DB, nickname string) (*m.User, error) {
+	row := db.QueryRow(`SELECT id, about, email, fullname, nickname 
 	FROM fuser 
 	WHERE ci_nickname=LOWER($1)`,
 		nickname)
@@ -70,8 +70,8 @@ func (s *UsersStorage) GetUserByNickname(nickname string) (*m.User, error) {
 	return ScanUserFromRow(row)
 }
 
-func (s *UsersStorage) GetUserByEmail(email string) (*m.User, error) {
-	row := s.db.QueryRow(`SELECT id, about, email, fullname, nickname 
+func GetUserByEmail(db *sql.DB, email string) (*m.User, error) {
+	row := db.QueryRow(`SELECT id, about, email, fullname, nickname 
 	FROM fuser 
 	WHERE ci_email=LOWER($1)`,
 		email)
@@ -79,8 +79,17 @@ func (s *UsersStorage) GetUserByEmail(email string) (*m.User, error) {
 	return ScanUserFromRow(row)
 }
 
+func GetUserById(db *sql.DB, id int) (*m.User, error) {
+	row := db.QueryRow(`SELECT id, about, email, fullname, nickname 
+	FROM fuser 
+	WHERE id=$1`,
+		id)
+
+	return ScanUserFromRow(row)
+}
+
 func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse { //(*m.User, *m.Error) {
-	user, err := s.GetUserByNickname(nickname)
+	user, err := GetUserByNickname(s.db, nickname)
 	if err != nil {
 		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
@@ -135,7 +144,7 @@ func (s *UsersStorage) UpdateUser(nickname string, update *m.User) *ApiResponse 
 }
 
 func (s *UsersStorage) GetUserDetails(nickname string) *ApiResponse { //(*m.User, *m.Error) {
-	user, err := s.GetUserByNickname(nickname)
+	user, err := GetUserByNickname(s.db, nickname)
 
 	if err != nil {
 		log.Println(err)
@@ -162,14 +171,26 @@ func ReadUsersArray(rows *sql.Rows) ([]*m.User, error) {
 	return users, nil
 }
 
-func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse { //([]*m.User, *m.Error) {	
+func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse { //([]*m.User, *m.Error) {
+	row := s.db.QueryRow(`SELECT id, 0, slug, 0, title, '' 
+	FROM forum 
+	WHERE ci_slug=LOWER($1)` ,
+		slug,
+	)
+
+	forum, err := ScanForumFromRow(row)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
 	queryBytes := bytes.Buffer{}
 	var queryParams []interface{}
 
 	queryBytes.WriteString(`WITH f AS (
 		SELECT id, admin_id, slug, title
 		FROM forum
-		WHERE ci_slug=LOWER($1)
+		WHERE id=$1
 	),
 	t AS (
 		SELECT id, author_id
@@ -185,7 +206,7 @@ func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, des
 	SELECT id, about, email, fullname, nickname 
 	FROM  fuser
 	JOIN fu USING(id)`)
-	queryParams = append(queryParams, slug)
+	queryParams = append(queryParams, forum.Id)
 
 	if desc {
 		if since != "" {
@@ -193,15 +214,18 @@ func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, des
 			queryParams = append(queryParams, since)
 		}
 
-		queryBytes.WriteString(fmt.Sprintf(` ORDER BY convert_to(ci_nickname,'SQL_ASCII') DESC LIMIT $%v`, len(queryParams)+1))
-		queryParams = append(queryParams, limit)
+		queryBytes.WriteString(` ORDER BY convert_to(ci_nickname,'SQL_ASCII') DESC`)
 	} else {
 		if since != "" {
 			queryBytes.WriteString(` WHERE convert_to(ci_nickname,'SQL_ASCII')>convert_to(LOWER($2),'SQL_ASCII')`)
 			queryParams = append(queryParams, since)
 		}
 
-		queryBytes.WriteString(fmt.Sprintf(` ORDER BY convert_to(ci_nickname,'SQL_ASCII') ASC LIMIT $%v`, len(queryParams)+1))
+		queryBytes.WriteString(` ORDER BY convert_to(ci_nickname,'SQL_ASCII') ASC`)
+	}
+
+	if limit > 1 {
+		queryBytes.WriteString(fmt.Sprintf(` LIMIT $%v`, len(queryParams)+1))
 		queryParams = append(queryParams, limit)
 	}
 

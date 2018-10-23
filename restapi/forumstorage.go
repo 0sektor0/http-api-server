@@ -54,8 +54,8 @@ func (s *ForumsStorage) AddForum(forum *m.Forum) *ApiResponse { //(*m.Forum, *m.
 	return &ApiResponse{Code: http.StatusConflict, Response: oldForum}
 }
 
-func (s *ForumsStorage) GetForumDetails(slug string) *ApiResponse { //(*m.Forum, *m.Error) {
-	row := s.db.QueryRow(`WITH f AS (
+func GetForumDetails(db *sql.DB, slug string) (*m.Forum, error) {
+	row := db.QueryRow(`WITH f AS (
 		SELECT id, admin_id, slug, title
 		FROM forum
 		WHERE ci_slug=LOWER($1)
@@ -76,7 +76,12 @@ func (s *ForumsStorage) GetForumDetails(slug string) *ApiResponse { //(*m.Forum,
 	JOIN fuser AS u ON u.id=f.admin_id `,
 		slug)
 
-	forum, err := ScanForumFromRow(row)
+	return ScanForumFromRow(row)
+}
+
+func (s *ForumsStorage) GetForumDetails(slug string) *ApiResponse { //(*m.Forum, *m.Error) {
+	forum, err := GetForumDetails(s.db, slug)
+
 	if err != nil {
 		log.Println(err)
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}

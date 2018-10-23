@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"encoding/json"
 	"github.com/kataras/iris"
 	"log"
@@ -78,8 +79,8 @@ func (h *ApiHandler) GetThreadDetails(ctx iris.Context) {
 }
 
 func (h *ApiHandler) GetPostDetails(ctx iris.Context) {
-	ctx.StatusCode(404)
-	ctx.Write([]byte("404\n"))
+	id, _ := strconv.Atoi(ctx.Params().Get("id"))
+	WriteResponse(h.apiService.Posts.GetPostDetails(id, nil), ctx)
 }
 
 func (h *ApiHandler) GetForumUsers(ctx iris.Context) {
@@ -123,8 +124,9 @@ func (h *ApiHandler) GetThreadPosts(ctx iris.Context) {
 }
 
 func (h *ApiHandler) UpdatePost(ctx iris.Context) {
-	id, _ := ctx.URLParamInt64("id")
+	id, _ := strconv.Atoi(ctx.Params().Get("id"))
 	postUpdate := new(m.PostUpdate)
+	ctx.ReadJSON(postUpdate)
 
 	WriteResponse(h.apiService.Posts.UpdatePost(id, postUpdate), ctx)
 }

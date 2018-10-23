@@ -78,13 +78,13 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 	return &ApiResponse{Code: http.StatusConflict, Response: oldThread}
 }
 
-func (s *ThreadsStorage) GetThreadDetails(slug string) *ApiResponse { //(*m.Thread, *m.Error) {
+func GetThreadDetails(db *sql.DB,slug string) (*m.Thread, error) {
 	threadId, err := strconv.Atoi(slug)
 	if err != nil {
 		threadId = 0
 	}
 
-	row := s.db.QueryRow(`WITH t AS (
+	row := db.QueryRow(`WITH t AS (
 		SELECT t.id, t.slug, t.title, f.slug AS forum_slug, u.nickname, t.created, t.message
 		FROM thread AS t
 		LEFT JOIN forum AS f ON f.id=t.forum_id
@@ -99,7 +99,11 @@ func (s *ThreadsStorage) GetThreadDetails(slug string) *ApiResponse { //(*m.Thre
 		threadId,
 	)
 
-	thread, err := ScanThreadFromRow(row)
+	return ScanThreadFromRow(row)
+}
+
+func (s *ThreadsStorage) GetThreadDetails(slug string) *ApiResponse { //(*m.Thread, *m.Error) {
+	thread, err := GetThreadDetails(s.db, slug)
 	if err != nil {
 		return &ApiResponse{Code: http.StatusNotFound, Response: err}
 	}

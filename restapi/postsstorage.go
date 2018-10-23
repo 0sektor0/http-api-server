@@ -1,12 +1,14 @@
 package restapi
 
 import (
-	"time"
-	"log"
+	"fmt"
+	"bytes"
 	"database/sql"
+	"log"
 	"net/http"
 	m "projects/http-api-server/models"
 	"strconv"
+	"time"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
@@ -74,12 +76,66 @@ func (s *PostsStorage) AddThread(slug string, thread *m.Thread) *ApiResponse { /
 	return nil
 }
 
-func (s *PostsStorage) GetPostDetails(id int32, related []string) *ApiResponse { //(*m.PostFull, *m.Error) {
-	panic("unemplimented function")
-	return nil
+func GetPostDetails(db *sql.DB, id int) (*m.PostFull, error) {
+	row := db.QueryRow(`WITH p AS (
+		SELECT *
+		FROM post 
+		WHERE id=$1
+	)
+	SELECT p.id, u.nickname, p.created, f.slug, p.edited, p.message, coalesce(p.parent_id, 0), t.id, f.id
+	FROM p
+	JOIN fuser AS u ON u.id=p.user_id
+	JOIN thread AS t ON t.id=p.thread_id
+	JOIN forum AS f ON f.id=t.forum_id`,
+		id,
+	)
+
+	return ScanPostDetailsFromRow(row)
 }
 
-func (s *PostsStorage) UpdatePost(id int64, update *m.PostUpdate) *ApiResponse { //(*m.Post, *m.Error) {
-	panic("unemplimented function")
-	return nil
+func (s *PostsStorage) GetPostDetails(id int, related []string) *ApiResponse { //(*m.PostFull, *m.Error) {
+	post, err := GetPostDetails(s.db, id)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+
+	details := &m.Details{Post: post}
+
+	return &ApiResponse{Code: http.StatusOK, Response: details}
+}
+
+func (s *PostsStorage) UpdatePost(id int, update *m.PostUpdate) *ApiResponse { //(*m.Post, *m.Error) {
+	post, err := GetPostDetails(s.db, id)
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusNotFound, Response: err}
+	}
+	
+	queryBytes := bytes.Buffer{}
+	var queryParams []interface{}
+
+	queryBytes.WriteString(`UPDATE post SET edited='true'`)
+
+	if(update.Message != "") {
+		queryBytes.WriteString(fmt.Sprintf(`, message=$%v`, len(queryParams)+1))
+		queryParams = append(queryParams, update.Message)
+	}
+	
+	queryBytes.WriteString(fmt.Sprintf(` WHERE id=$%v`, len(queryParams)+1))
+	queryParams = append(queryParams, id)
+
+	query := queryBytes.String()
+	log.Println(query)
+
+	_, err = s.db.Exec(query, queryParams...)	
+	if err != nil {
+		log.Println(err)
+		return &ApiResponse{Code: http.StatusBadRequest, Response: err}
+	}
+
+	post.Message = update.Message
+	post.IsEdited = true
+
+	return &ApiResponse{Code: http.StatusOK, Response: post}
 }

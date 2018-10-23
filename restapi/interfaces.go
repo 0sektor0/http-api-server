@@ -37,9 +37,9 @@ type IThreadsStorage interface {
 type IPostsStorage interface {
 	AddPosts(slug string, posts []*m.Post) *ApiResponse
 
-	GetPostDetails(id int32, related []string) *ApiResponse
+	GetPostDetails(id int, related []string) *ApiResponse
 
-	UpdatePost(id int64, update *m.PostUpdate) *ApiResponse
+	UpdatePost(id int, update *m.PostUpdate) *ApiResponse
 }
 
 type IServiceStorege interface {
