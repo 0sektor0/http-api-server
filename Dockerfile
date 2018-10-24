@@ -17,11 +17,11 @@ RUN apt-get -y install postgresql-$PGVER
 USER root
 
 RUN git clone https://github.com/0sektor0/http-api-server
-RUN ls -l
 WORKDIR http-api-server
-RUN ls -l
-RUN mv http-api-server /usr/bin/
-RUN ls -l | grep http-api-server
+RUN mv http-api-server /usr/bin/ && cp -r data /usr/bin/ && chmod 777 /usr/bin/data/*
+RUN chmod 777 ./data/db-init.pgsql
+RUN ls -l ./data
+RUN pwd
 
 EXPOSE 5000
 
@@ -33,7 +33,7 @@ USER postgres
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER forum_admin WITH SUPERUSER PASSWORD 'forum_admin';" &&\
     createdb -O forum_admin forum &&\
-    psql -d forum -a -f ./data/db-init.psql &&\
+    psql -d forum -a -f /http-api-server/data/db-init.pgsql &&\
     /etc/init.d/postgresql stop
 
 EXPOSE 5432
