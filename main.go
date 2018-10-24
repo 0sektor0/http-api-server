@@ -24,5 +24,6 @@ func main() {
 		return
 	}
 
+	log.Println("START")
 	app.Run(iris.Addr(cfg.Port), iris.WithoutServerError(iris.ErrServerClosed))
 }
