@@ -3,10 +3,10 @@ package models
 import "encoding/json"
 
 type Thread struct {
-	Id      int32   `json:"id"`
+	Id      int     `json:"id"`
 	Slug    *string `json:"slug",omitempty`
 	Title   string  `json:"title"`
-	Votes   int32   `json:"votes"`
+	Votes   int     `json:"votes"`
 	Forum   string  `json:"forum"`
 	Author  string  `json:"author"`
 	Created string  `json:"created",omitempty`

@@ -43,7 +43,14 @@ func ScanPostFromRow(row IRow) (*m.Post, error) {
 //p.id, u.nickname, p.created, f.slug, p.edited, p.message, coalesce(p.parent_id, 0), t.id, f.id
 func ScanPostDetailsFromRow(row IRow) (*m.PostFull, error) {
 	p := new(m.PostFull)
-	err := row.Scan(&p.Id, &p.Author, &p.Created, &p.Forum, &p.IsEdited, &p.Message, &p.Parent, &p.ThreadId, &p.ForumId)
+	err := row.Scan(&p.Id, &p.Author, &p.Created, &p.Forum, &p.IsEdited, &p.Message, &p.Parent, &p.ThreadId, &p.AuthorId, &p.ForumId)
 
 	return p, err
+}
+
+func ScanStatusFromRow(row IRow) (*m.Status, error) {
+	s := new(m.Status)
+	err := row.Scan(&s.User, &s.Thread, &s.Post, &s.Forum)
+
+	return s, err
 }

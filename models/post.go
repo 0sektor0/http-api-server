@@ -3,10 +3,10 @@ package models
 import "encoding/json"
 
 type Post struct {
-	Id       int64  `json:"id"`
+	Id       int    `json:"id"`
 	Forum    string `json:"forum"`
-	Parent   *int64  `json:"parent"`
-	Thread   int32  `json:"thread"`
+	Parent   *int   `json:"parent"`
+	Thread   int    `json:"thread"`
 	Author   string `json:"author"`
 	Message  string `json:"message"`
 	Created  string `json:"created"`

@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"net/http"
 	"database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -12,11 +13,21 @@ type ServiceStorage struct {
 }
 
 func (s *ServiceStorage) GetServiceStatus() *ApiResponse { //(*m.Status, *m.Error) {
-	panic("unemplimented function")
-	return nil
+	row := s.db.QueryRow(`SELECT 
+	(SELECT COUNT(*) FROM fuser), 
+	(SELECT COUNT(*) FROM thread), 
+	(SELECT COUNT(*) FROM post), 
+	(SELECT COUNT(*) FROM forum)`)
+
+	status, err := ScanStatusFromRow(row)
+	if err != nil {
+		return &ApiResponse{Code: http.StatusInternalServerError, Response: err}
+	}
+
+	return &ApiResponse{Code: http.StatusOK, Response: status}
 }
 
 func (s *ServiceStorage) VipeServiceStatus() *ApiResponse { //*m.Error {
-	panic("unemplimented function")
-	return nil
+	s.db.Exec(`truncate table vote, post, thread, forum, fuser`)
+	return &ApiResponse{Code: http.StatusOK, Response: "OK"}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"strconv"
 	"encoding/json"
 	"github.com/kataras/iris"
@@ -80,7 +81,9 @@ func (h *ApiHandler) GetThreadDetails(ctx iris.Context) {
 
 func (h *ApiHandler) GetPostDetails(ctx iris.Context) {
 	id, _ := strconv.Atoi(ctx.Params().Get("id"))
-	WriteResponse(h.apiService.Posts.GetPostDetails(id, nil), ctx)
+	rel := ctx.URLParam("related")
+	
+	WriteResponse(h.apiService.Posts.GetPostDetails(id, strings.Split(rel, ",")), ctx)
 }
 
 func (h *ApiHandler) GetForumUsers(ctx iris.Context) {
