@@ -3,9 +3,9 @@ package restapi
 import (
 	"database/sql"
 	pq "github.com/lib/pq"
+	m "http-api-server/models"
 	"log"
 	"net/http"
-	m "projects/http-api-server/models"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"

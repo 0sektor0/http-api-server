@@ -9,7 +9,7 @@ import (
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	m "projects/http-api-server/models"
+	m "http-api-server/models"
 )
 
 type UsersStorage struct {
@@ -174,7 +174,7 @@ func ReadUsersArray(rows *sql.Rows) ([]*m.User, error) {
 func (s *UsersStorage) GetUsersByForum(slug string, limit int, since string, desc bool) *ApiResponse { //([]*m.User, *m.Error) {
 	row := s.db.QueryRow(`SELECT id, 0, slug, 0, title, '' 
 	FROM forum 
-	WHERE ci_slug=LOWER($1)` ,
+	WHERE ci_slug=LOWER($1)`,
 		slug,
 	)
 

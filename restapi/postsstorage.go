@@ -10,7 +10,7 @@ import (
 	"time"
 
 	pq "github.com/lib/pq"
-	m "projects/http-api-server/models"
+	m "http-api-server/models"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"

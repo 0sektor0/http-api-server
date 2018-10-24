@@ -1,14 +1,14 @@
 package main
 
 import (
-	"strings"
-	"strconv"
 	"encoding/json"
 	"github.com/kataras/iris"
 	"log"
+	"strconv"
+	"strings"
 
-	m "projects/http-api-server/models"
-	rest "projects/http-api-server/restapi"
+	m "http-api-server/models"
+	rest "http-api-server/restapi"
 )
 
 //посредник между сетью и логикой апи
@@ -82,7 +82,7 @@ func (h *ApiHandler) GetThreadDetails(ctx iris.Context) {
 func (h *ApiHandler) GetPostDetails(ctx iris.Context) {
 	id, _ := strconv.Atoi(ctx.Params().Get("id"))
 	rel := ctx.URLParam("related")
-	
+
 	WriteResponse(h.apiService.Posts.GetPostDetails(id, strings.Split(rel, ",")), ctx)
 }
 
@@ -92,7 +92,7 @@ func (h *ApiHandler) GetForumUsers(ctx iris.Context) {
 	since := ctx.URLParam("since")
 	desc, _ := ctx.URLParamBool("desc")
 
-	if limit <0 {
+	if limit < 0 {
 		limit = 0
 	}
 
@@ -105,7 +105,7 @@ func (h *ApiHandler) GetForumThreads(ctx iris.Context) {
 	since := ctx.URLParam("since")
 	desc, _ := ctx.URLParamBool("desc")
 
-	if limit <0 {
+	if limit < 0 {
 		limit = 0
 	}
 
@@ -119,10 +119,10 @@ func (h *ApiHandler) GetThreadPosts(ctx iris.Context) {
 	sort := ctx.URLParam("sort")
 	desc, _ := ctx.URLParamBool("desc")
 
-	if limit <0 {
+	if limit < 0 {
 		limit = 0
 	}
-	
+
 	WriteResponse(h.apiService.Threads.GetThreadPosts(slug, limit, since, sort, desc), ctx)
 }
 

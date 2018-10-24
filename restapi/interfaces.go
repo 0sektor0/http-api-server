@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	m "projects/http-api-server/models"
+	m "http-api-server/models"
 )
 
 type IUsersStorage interface {
@@ -30,7 +30,7 @@ type IThreadsStorage interface {
 	UpdateThread(slug string, thread *m.Thread) *ApiResponse
 
 	VoteForThread(slug string, vote *m.Vote) *ApiResponse
-	
+
 	GetThreadByForum(slug string, limit int, since string, desc bool) *ApiResponse
 }
 

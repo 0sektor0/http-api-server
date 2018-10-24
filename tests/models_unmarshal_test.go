@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	m "projects/http-api-server/models"
+	m "http-api-server/models"
 )
 
 func ConcludeTestResult(expected interface{}, result interface{}, unmarshalError error, t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
 
-	rest "projects/http-api-server/restapi"
+	rest "http-api-server/restapi"
 )
 
 func BuildServer(cfg *Configs) (*iris.Application, error) {

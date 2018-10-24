@@ -1,7 +1,7 @@
 package restapi
 
 import (
-	m "projects/http-api-server/models"
+	m "http-api-server/models"
 )
 
 type IRow interface {

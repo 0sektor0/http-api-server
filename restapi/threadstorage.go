@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	pq "github.com/lib/pq"
+	m "http-api-server/models"
 	"log"
 	"net/http"
-	m "projects/http-api-server/models"
 	"strconv"
 	"time"
 
@@ -78,7 +78,7 @@ func (s *ThreadsStorage) AddThread(thread *m.Thread) *ApiResponse { //*m.Thread,
 	return &ApiResponse{Code: http.StatusConflict, Response: oldThread}
 }
 
-func GetThreadDetails(db *sql.DB,slug string) (*m.Thread, error) {
+func GetThreadDetails(db *sql.DB, slug string) (*m.Thread, error) {
 	threadId, err := strconv.Atoi(slug)
 	if err != nil {
 		threadId = 0
