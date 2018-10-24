@@ -11,7 +11,6 @@ const cfgPath = "./data/cfg.json"
 func main() {
 	cfg, err := LoadConfigs(cfgPath)
 	if err != nil {
-		log.Fatalf("failed to read configuration file: %s", err)
 		cfg = &Configs{
 			Connector: "postgres",
 			Connection: "host=127.0.0.1 port=5432 user=forum_admin password=forum_admin dbname=forum sslmode=disable",
